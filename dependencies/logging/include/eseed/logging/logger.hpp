@@ -27,8 +27,12 @@ public:
         outputs.push_back(&std::cout);
     }
 
-    Logger(std::ostream destination);
-    Logger(std::vector<std::ostream> outputs);
+    Logger(std::ostream *destination)
+    {
+        outputs.push_back(destination);
+    }
+
+    Logger(std::vector<std::ostream*> outputs) : outputs(outputs) {}
 
     template <typename... Ts>
     void trace(const std::string &format, const Ts &... args)

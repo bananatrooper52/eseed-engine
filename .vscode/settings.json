@@ -43,6 +43,7 @@
         "cctype": "cpp",
         "vector": "cpp",
         "optional": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "ctime": "cpp"
     }
 }
