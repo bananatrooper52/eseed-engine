@@ -266,81 +266,81 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b)
 
 // Operators
 
-#define ESEED_VEC_PRE(op)                \
-    template <size_t L, typename T>      \
-    Vec<L, T> &operator op(Vec<L, T> &v) \
-    {                                    \
-        for (size_t i = 0; i < L; i++)   \
-            op v[i];                     \
-        return v;                        \
+#define ESEED_VEC_PRE(op)                                                 \
+    template <size_t L, typename T, typename = decltype((*(new T(0)))op)> \
+    Vec<L, T> &operator op(Vec<L, T> &v)                                  \
+    {                                                                     \
+        for (size_t i = 0; i < L; i++)                                    \
+            op v[i];                                                      \
+        return v;                                                         \
     }
 
-#define ESEED_VEC_POST(op)                   \
-    template <size_t L, typename T>          \
-    Vec<L, T> operator op(Vec<L, T> &v, int) \
-    {                                        \
-        Vec<L, T> out = v;                   \
-        for (size_t i = 0; i < L; i++)       \
-            v[i] op;                         \
-        return out;                          \
+#define ESEED_VEC_POST(op)                                                \
+    template <size_t L, typename T, typename = decltype((*(new T(0)))op)> \
+    Vec<L, T> operator op(Vec<L, T> &v, int)                              \
+    {                                                                     \
+        Vec<L, T> out = v;                                                \
+        for (size_t i = 0; i < L; i++)                                    \
+            v[i] op;                                                      \
+        return out;                                                       \
     }
 
-#define ESEED_VEC_UN(op)                      \
-    template <size_t L, typename T>           \
-    Vec<L, T> operator op(const Vec<L, T> &v) \
-    {                                         \
-        Vec<L, T> out;                        \
-        for (size_t i = 0; i < L; i++)        \
-            op v[i];                          \
-        return out;                           \
+#define ESEED_VEC_UN(op)                                          \
+    template <size_t L, typename T, typename = decltype(op T(0))> \
+    Vec<L, T> operator op(const Vec<L, T> &v)                     \
+    {                                                             \
+        Vec<L, T> out;                                            \
+        for (size_t i = 0; i < L; i++)                            \
+            op v[i];                                              \
+        return out;                                               \
     }
 
-#define ESEED_VEC_BIN_VV(op)                                                               \
-    template <size_t L, typename T0, typename T1>                                          \
-    Vec<L, decltype(T0(0) op T1(0))> operator op(const Vec<L, T0> &a, const Vec<L, T1> &b) \
-    {                                                                                      \
-        Vec<L, decltype(T0(0) op T1(0))> out;                                              \
-        for (size_t i = 0; i < L; i++)                                                     \
-            out[i] = a[i] op b[i];                                                         \
-        return a;                                                                          \
+#define ESEED_VEC_BIN_VV(op)                                                                \
+    template <size_t L, typename T0, typename T1, typename TRes = decltype(T0(0) op T1(0))> \
+    Vec<L, TRes> operator op(const Vec<L, T0> &a, const Vec<L, T1> &b)                      \
+    {                                                                                       \
+        Vec<L, TRes> out;                                                                   \
+        for (size_t i = 0; i < L; i++)                                                      \
+            out[i] = a[i] op b[i];                                                          \
+        return a;                                                                           \
     }
 
-#define ESEED_VEC_BIN_VS(op)                                                       \
-    template <size_t L, typename T0, typename T1>                                  \
-    Vec<L, decltype(T0(0) op T1(0))> operator op(const Vec<L, T0> &a, const T1 &b) \
-    {                                                                              \
-        Vec<L, decltype(T0(0) op T1(0))> out;                                      \
-        for (size_t i = 0; i < L; i++)                                             \
-            out[i] = a[i] op b;                                                    \
-        return out;                                                                \
+#define ESEED_VEC_BIN_VS(op)                                                                \
+    template <size_t L, typename T0, typename T1, typename TRes = decltype(T0(0) op T1(0))> \
+    Vec<L, TRes> operator op(const Vec<L, T0> &a, const T1 &b)                              \
+    {                                                                                       \
+        Vec<L, TRes> out;                                                                   \
+        for (size_t i = 0; i < L; i++)                                                      \
+            out[i] = a[i] op b;                                                             \
+        return out;                                                                         \
     }
 
-#define ESEED_VEC_BIN_SV(op)                                                       \
-    template <size_t L, typename T0, typename T1>                                  \
-    Vec<L, decltype(T0(0) op T1(0))> operator op(const T0 &a, const Vec<L, T1> &b) \
-    {                                                                              \
-        Vec<L, decltype(T0(0) op T1(0))> out;                                      \
-        for (size_t i = 0; i < L; i++)                                             \
-            out[i] = a op b[i];                                                    \
-        return out;                                                                \
+#define ESEED_VEC_BIN_SV(op)                                                                \
+    template <size_t L, typename T0, typename T1, typename TRes = decltype(T0(0) op T1(0))> \
+    Vec<L, TRes> operator op(const T0 &a, const Vec<L, T1> &b)                              \
+    {                                                                                       \
+        Vec<L, TRes> out;                                                                   \
+        for (size_t i = 0; i < L; i++)                                                      \
+            out[i] = a op b[i];                                                             \
+        return out;                                                                         \
     }
 
-#define ESEED_VEC_ASSN_VV(op)                                   \
-    template <size_t L, typename T0, typename T1>               \
-    Vec<L, T0> &operator op(Vec<L, T0> &a, const Vec<L, T1> &b) \
-    {                                                           \
-        for (size_t i = 0; i < L; i++)                          \
-            a[i] op b[i];                                       \
-        return a;                                               \
+#define ESEED_VEC_ASSN_VV(op)                                                          \
+    template <size_t L, typename T0, typename T1, typename = decltype(T0(0) op T1(0))> \
+    Vec<L, T0> &operator op(Vec<L, T0> &a, const Vec<L, T1> &b)                        \
+    {                                                                                  \
+        for (size_t i = 0; i < L; i++)                                                 \
+            a[i] op b[i];                                                              \
+        return a;                                                                      \
     }
 
-#define ESEED_VEC_ASSN_VS(op)                           \
-    template <size_t L, typename T0, typename T1>       \
-    Vec<L, T0> &operator op(Vec<L, T0> &a, const T1 &b) \
-    {                                                   \
-        for (size_t i = 0; i < L; i++)                  \
-            a[i] op b;                                  \
-        return a;                                       \
+#define ESEED_VEC_ASSN_VS(op)                                                          \
+    template <size_t L, typename T0, typename T1, typename = decltype(T0(0) op T1(0))> \
+    Vec<L, T0> &operator op(Vec<L, T0> &a, const T1 &b)                                \
+    {                                                                                  \
+        for (size_t i = 0; i < L; i++)                                                 \
+            a[i] op b;                                                                 \
+        return a;                                                                      \
     }
 
 ESEED_VEC_PRE(++)
