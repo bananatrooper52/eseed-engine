@@ -291,7 +291,7 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b)
     {                                                             \
         Vec<L, T> out;                                            \
         for (size_t i = 0; i < L; i++)                            \
-            op v[i];                                              \
+            v[i] = op v[i];                                       \
         return out;                                               \
     }
 
