@@ -1,0 +1,20 @@
+GAME "ENGINE"
+
+Primary Language: C++
+
+Goals:
+    Fast
+    Consistent code
+    Simple
+    Easy to compile
+    Minimal dependencies
+    --> Modular <--
+
+Features (For Now):
+    Error / Info Logging
+    Math
+    Window management
+    Rendering (Big topic)
+        - Raytracing is interesting
+    Sound
+    Physics (VERY big topic)
