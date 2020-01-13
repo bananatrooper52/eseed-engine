@@ -4,5 +4,8 @@ project(eseed_logging)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(eseed_logging INTERFACE)
-target_include_directories(eseed_logging INTERFACE include/)
+add_library(eseed_logging
+    src/logger.cpp
+    src/format.cpp
+)
+target_include_directories(eseed_logging PUBLIC include/)

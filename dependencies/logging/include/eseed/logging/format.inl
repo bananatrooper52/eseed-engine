@@ -5,47 +5,48 @@
 #include <sstream>
 
 template <typename... Ts>
-std::string eseed::logging::format(const std::string& format, const Ts&... args)
-{
-    return eseed::logging::format(0, format, args...);
+std::string esd::logging::format(const std::string& format, const Ts&... args) {
+    return esd::logging::format(0, format, args...);
 }
 
 template <typename T, typename... Ts>
-std::string eseed::logging::format(size_t argIndex, const std::string& format, const T& arg, const Ts&... args)
-{
-    std::string f = eseed::logging::format(argIndex, format, arg);
-    return eseed::logging::format(argIndex + 1, f, args...);
+std::string esd::logging::format(
+    size_t argIndex, 
+    const std::string& format, 
+    const T& arg, 
+    const Ts&... args
+) {
+    std::string f = esd::logging::format(argIndex, format, arg);
+    return esd::logging::format(argIndex + 1, f, args...);
 }
 
 template <typename T>
-std::string eseed::logging::format(size_t argIndex, const std::string& format, const T& arg)
-{
+std::string esd::logging::format(
+    size_t argIndex, 
+    const std::string& format, 
+    const T& arg
+) {
     std::ostringstream out;
     bool readingArg = false;
     std::string argStr;
 
     bool autoArgRead = false;
     
-    for (size_t i = 0; i < format.length(); i++)
-    {
+    for (size_t i = 0; i < format.length(); i++) {
         const char& ch = format[i];
 
-        if (ch == '{' && !readingArg)
-        {
+        if (ch == '{' && !readingArg) {
             readingArg = true;
             continue;
         }
-        if (ch == '}' && readingArg)
-        {
+
+        if (ch == '}' && readingArg) {
             readingArg = false;
 
-            if (argStr == "" && !autoArgRead)
-            {
+            if (argStr == "" && !autoArgRead) {
                 (std::ostream&)out << arg;
                 autoArgRead = true;
-            }
-            else
-            {
+            } else {
                 out << "{" << argStr << "}";
             }
 
@@ -54,12 +55,9 @@ std::string eseed::logging::format(size_t argIndex, const std::string& format, c
             continue;
         }
 
-        if (readingArg)
-        {
+        if (readingArg) {
             argStr += ch;
-        }
-        else
-        {
+        } else {
             out << ch;
         }
     }

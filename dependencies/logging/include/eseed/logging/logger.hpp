@@ -4,115 +4,108 @@
 #include <vector>
 #include <ostream>
 #include <iostream>
+#include <memory>
 #include <eseed/logging/format.hpp>
 
-namespace eseed::logging
-{
+namespace esd::logging {
 
-class Logger
-{
+class Logger {
 public:
-    enum LogLevel
-    {
-        LEVEL_TRACE,
-        LEVEL_DEBUG,
-        LEVEL_INFO,
-        LEVEL_WARN,
-        LEVEL_ERROR,
-        LEVEL_FATAL
+    enum LogLevel {
+        eLevelTrace,
+        eLevelDebug,
+        eLevelInfo,
+        eLevelWarn,
+        eLevelError,
+        eLevelFatal
     };
 
-    Logger()
-    {
-        outputs.push_back(&std::cout);
-    }
+    // Construct logger to std::cout
+    Logger();
 
-    Logger(std::ostream *destination)
-    {
-        outputs.push_back(destination);
-    }
+    // Construct logger to a single output
+    Logger(std::ostream* output);
 
-    Logger(std::vector<std::ostream*> outputs) : outputs(outputs) {}
+    // Construct logger to multiple outputs 
+    Logger(std::vector<std::ostream*> outputs);
 
+    // Check if "level" is equal to or above the minimum log level
+    bool isLevelEnabled(LogLevel level) const;
+
+    // All log levels at and above "level" will be outputted 
+    void setMinLogLevel(LogLevel level);
+
+    // For the most verbose and insignificant of details
     template <typename... Ts>
-    void trace(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_TRACE))
-            println("TRACE", format, args...);
+    void trace(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelTrace, format, args...);
     }
 
+    // For minor details to help with debugging
     template <typename... Ts>
-    void debug(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_DEBUG))
-            println("DEBUG", format, args...);
+    std::string debug(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelDebug, format, args...);
     }
 
+    // For general information
     template <typename... Ts>
-    void info(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_INFO))
-            println("INFO", format, args...);
+    std::string info(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelInfo, format, args...);
     }
 
+    // For unexpected but non-threatening circumstances
     template <typename... Ts>
-    void warn(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_WARN))
-            println("WARN", format, args...);
+    std::string warn(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelWarn, format, args...);
     }
 
+    // For a recoverable problem
     template <typename... Ts>
-    void error(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_ERROR))
-            println("ERROR", format, args...);
+    std::string error(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelError, format, args...);
     }
 
+    // For a problem that cannot be recovered from
     template <typename... Ts>
-    void fatal(const std::string &format, const Ts &... args)
-    {
-        if (levelEnabled(LEVEL_FATAL))
-            println("FATAL", format, args...);
+    std::string fatal(const std::string& format, const Ts&... args) const {
+        return printlnLevel(eLevelFatal, format, args...);
     }
 
-    bool levelEnabled(LogLevel level)
-    {
-        return level >= minLogLevel;
-    }
-
-    void setMinLogLevel(LogLevel level)
-    {
-        minLogLevel = level;
+    // Assert a condition, crash the program and output a message if false
+    template <typename... Ts>
+    void fatalAssert(
+        bool condition, 
+        const std::string& format, 
+        const Ts&... args
+    ) const {
+        if (!condition) {
+            fatal(format, args...);
+            std::terminate();
+        }
     }
 
 private:
-    LogLevel minLogLevel = LEVEL_INFO;
-    std::vector<std::ostream *> outputs;
+    LogLevel minLogLevel = eLevelInfo;
+    std::vector<std::ostream*> outputs;
 
+    static std::string getLogLevelString(LogLevel level);
+
+    // Condense arguments to pass to println function
     template <typename... Ts>
-    void println(const std::string &level, const std::string &format, const Ts &... args)
-    {
-        std::string line = eseed::logging::format(format, args...);
-        println(level, line);
+    std::string printlnLevel(
+        LogLevel level, 
+        const std::string& format, 
+        const Ts&... args
+    ) const {
+        std::string line = esd::logging::format(format, args...);
+        if (isLevelEnabled(level)) println(getLogLevelString(level), line);
+        return line;
     }
-
-    void println(const std::string &level, const std::string &line)
-    {
-        time_t tt;
-        time(&tt);
-        tm ti;
-        localtime_s(&ti, &tt);
-
-        char timeStr[18];
-        strftime(timeStr, sizeof(timeStr), "%y-%m-%d %H:%M:%S", &ti);
-
-        std::string outLine = std::string(timeStr) + " [" + level + "]: " + line;
-        for (auto out : outputs)
-        {
-            *out << outLine << std::endl;
-        }
-    }
+    
+    // Print a line of text prefixed with date and level
+    void println(const std::string& level, const std::string& line) const;
 };
 
-} // namespace eseed::logging
+inline Logger mainLogger;
+
+}

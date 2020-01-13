@@ -6,7 +6,7 @@
 #include <iostream>
 #include <array>
 
-namespace eseed::math
+namespace esd::math
 {
 
 template <size_t M, size_t N, typename T>

@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace eseed::math
+namespace esd::math
 {
 
 template <typename T>

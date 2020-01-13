@@ -8,7 +8,7 @@
 #include <ostream>
 #include <array>
 
-namespace eseed::math
+namespace esd::math
 {
 
 template <size_t L, typename T>
@@ -115,7 +115,7 @@ public:
 
     // Vec<3, T>(a, b, c) => [ a, b, c ]
     template <typename... Ts, typename std::enable_if_t<std::conjunction_v<std::is_convertible<Ts, T>...> && (sizeof...(Ts) == L)> * = nullptr>
-    Vec(const Ts &... components) : VecData{((T)components)...} { std::cout << "size: " << sizeof...(Ts) << std::endl; }
+    Vec(const Ts &... components) : VecData{((T)components)...} {}
 
     // Vec<3, T>(v) => [ v, v, v ]
     explicit Vec(const T &component)

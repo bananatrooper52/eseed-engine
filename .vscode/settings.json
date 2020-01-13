@@ -44,6 +44,10 @@
         "vector": "cpp",
         "optional": "cpp",
         "sstream": "cpp",
-        "ctime": "cpp"
+        "ctime": "cpp",
+        "map": "cpp",
+        "xtree": "cpp",
+        "fstream": "cpp",
+        "functional": "cpp"
     }
 }

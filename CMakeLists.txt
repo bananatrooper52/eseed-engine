@@ -12,3 +12,5 @@ add_subdirectory(dependencies/logging)
 
 add_executable(eseed_engine src/main.cpp)
 target_link_libraries(eseed_engine eseed_logging eseed_math eseed_graphics)
+
+enable_testing()
