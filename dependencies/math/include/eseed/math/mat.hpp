@@ -6,8 +6,7 @@
 #include <iostream>
 #include <array>
 
-namespace esd::math
-{
+namespace esd::math {
 
 template <size_t M, size_t N, typename T>
 class MatData
@@ -83,8 +82,7 @@ template <typename T>
 using Mat4 = Mat4x4<T>;
 
 template <size_t M, size_t N, typename T>
-class Mat : public MatData<M, N, T>
-{
+class Mat : public MatData<M, N, T> {
 public:
     using Col = Vec<M, T>;
     using Row = Vec<N, T>;
@@ -105,8 +103,7 @@ public:
     // [ a, b ]
     // [ c, d ]
     template <typename... Ts, typename std::enable_if_t<std::conjunction_v<std::is_convertible<Ts, T>...> && (sizeof...(Ts) == M * N)> * = nullptr>
-    Mat(const Ts &... components)
-    {
+    Mat(const Ts &... components) {
         std::array<T, M * N> arr{((T)components)...};
         std::copy(arr.begin(), arr.end(), &data[0][0]);
     }
@@ -114,51 +111,44 @@ public:
     // Mat<2, 2, T>(v) =>
     // [ v, 0 ]
     // [ 0, v ]
-    explicit Mat(const T &component)
-    {
+    explicit Mat(const T &component) {
         for (size_t i = 0; i < (M > N ? M : N); i++)
             data[i][i] = component;
     }
 
-    Col getCol(size_t j) const
-    {
+    Col getCol(size_t j) const {
         Col col;
         for (size_t i = 0; i < M; i++)
             col[i] = data[i][j];
         return col;
     }
 
-    Row getRow(size_t i) const
-    {
+    Row getRow(size_t i) const {
         Row row;
         for (size_t j = 0; j < N; j++)
             row[j] = data[i][j];
         return row;
     }
 
-    const Col &operator[](size_t i) const
-    {
+    const Col &operator[](size_t i) const {
         if (i >= M)
             throw std::out_of_range("Index is larger than Vec column");
         return data[i];
     }
 
-    Col &operator[](size_t i)
-    {
+    Col &operator[](size_t i) {
         if (i >= M)
             throw std::out_of_range("Index is larger than Vec column");
         return data[i];
     }
 
-    Mat inverse() const
-    {
+    Mat inverse() const {
         Mat<M, N, T> out = *this;
         for (size_t i = 0; i <)
     }
 
     template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> translate(const Vec3<T1> &translation) const
-    {
+    Mat4<T> translate(const Vec3<T1> &translation) const {
         Mat4<T> out = *this;
         out[0][3] = translation.x;
         out[1][3] = translation.y;
@@ -167,8 +157,7 @@ public:
     }
 
     template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateX(const T1 &xAngle) const
-    {
+    Mat4<T> rotateX(const T1 &xAngle) const {
         Mat4<T> out = *this;
         out[1][1] = cos(xAngle);
         out[1][2] = -sin(xAngle);
@@ -178,8 +167,7 @@ public:
     }
 
     template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateY(const T1 &yAngle) const
-    {
+    Mat4<T> rotateY(const T1 &yAngle) const {
         Mat4<T> out = *this;
         out[0][0] = cos(yAngle);
         out[0][2] = sin(yAngle);
@@ -189,8 +177,7 @@ public:
     }
 
     template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateZ(const T1 &zAngle) const
-    {
+    Mat4<T> rotateZ(const T1 &zAngle) const {
         Mat4<T> out = *this;
         out[0][0] = cos(zAngle);
         out[0][1] = -sin(zAngle);
@@ -199,12 +186,8 @@ public:
         return out;
     }
 
-    
-
-    friend std::ostream &operator<<(std::ostream &out, const Mat &m)
-    {
-        for (size_t i = 0; i < M; i++)
-        {
+    friend std::ostream &operator<<(std::ostream &out, const Mat &m)     {
+        for (size_t i = 0; i < M; i++) {
             out << m.getRow(i);
             if (i < M - 1)
                 out << "\n";
@@ -216,8 +199,7 @@ public:
 // Functions
 
 template <size_t M, size_t N, size_t MN, typename T0, typename T1>
-Mat<M, N, decltype(T0(0) * T1(0))> matmul(const Mat<M, MN, T0> &a, const Mat<MN, N, T1> &b)
-{
+Mat<M, N, decltype(T0(0) * T1(0))> matmul(const Mat<M, MN, T0> &a, const Mat<MN, N, T1> &b) {
     Mat<M, N, decltype(T0(0) * T1(0))> out;
     for (size_t i = 0; i < N; i++)
         for (size_t j = 0; j < M; j++)
@@ -226,8 +208,7 @@ Mat<M, N, decltype(T0(0) * T1(0))> matmul(const Mat<M, MN, T0> &a, const Mat<MN,
 }
 
 template <size_t M, size_t MN, typename T0, typename T1>
-Vec<M, decltype(T0(0), T1(0))> matmul(const Mat<M, MN, T0> &a, const Vec<MN, T1> &b)
-{
+Vec<M, decltype(T0(0), T1(0))> matmul(const Mat<M, MN, T0> &a, const Vec<MN, T1> &b) {
     Vec<M, decltype(T0(0) * T1(0))> out;
     for (size_t i = 0; i < M; i++)
         out[i] = dot(a.getRow(i), b);
@@ -235,8 +216,7 @@ Vec<M, decltype(T0(0), T1(0))> matmul(const Mat<M, MN, T0> &a, const Vec<MN, T1>
 }
 
 template <size_t MN, size_t N, typename T0, typename T1>
-Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1> &b)
-{
+Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1> &b) {
     Vec<N, decltype(T0(0) * T1(0))> out;
     for (size_t j = 0; j < N; j++)
         out[j] = dot(a, b.getCol(j));
@@ -245,81 +225,73 @@ Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1>
 
 // Operators
 
-#define ESEED_MAT_PRE(op)                      \
-    template <size_t M, size_t N, typename T>  \
-    Mat<M, N, T> &operator op(Mat<M, N, T> &m) \
-    {                                          \
-        for (size_t i = 0; i < M; i++)         \
-            op m[i];                           \
-        return m;                              \
+#define ESEED_MAT_PRE(op)                       \
+    template <size_t M, size_t N, typename T>   \
+    Mat<M, N, T> &operator op(Mat<M, N, T> &m) { \
+        for (size_t i = 0; i < M; i++)           \
+            op m[i];                             \
+        return m;                                \
     }
 
-#define ESEED_MAT_POST(op)                         \
-    template <size_t M, size_t N, typename T>      \
-    Mat<M, N, T> operator op(Mat<M, N, T> &m, int) \
-    {                                              \
-        Mat<M, N, T> out = m;                      \
-        for (size_t i = 0; i < M; i++)             \
-            m[i] op;                               \
-        return out;                                \
+#define ESEED_MAT_POST(op)                           \
+    template <size_t M, size_t N, typename T>        \
+    Mat<M, N, T> operator op(Mat<M, N, T> &m, int) { \
+        Mat<M, N, T> out = m;                        \
+        for (size_t i = 0; i < M; i++)               \
+            m[i] op;                                 \
+        return out;                                  \
     }
 
-#define ESEED_MAT_UN(op)                            \
-    template <size_t M, size_t N, typename T>       \
-    Mat<M, N, T> operator op(const Mat<M, N, T> &m) \
-    {                                               \
-        Mat<M, N, T> out;                           \
-        for (size_t i = 0; i < M; i++)              \
-            op m[i];                                \
-        return out;                                 \
+#define ESEED_MAT_UN(op)                              \
+    template <size_t M, size_t N, typename T>         \
+    Mat<M, N, T> operator op(const Mat<M, N, T> &m) { \
+        Mat<M, N, T> out;                             \
+        for (size_t i = 0; i < M; i++)                \
+            op m[i];                                  \
+        return out;                                   \
     }
 
-#define ESEED_MAT_BIN_MM(op)                                                                        \
-    template <size_t M, size_t N, typename T0, typename T1>                                         \
-    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, const Mat<M, N, T1> &b) \
-    {                                                                                               \
-        Mat<M, N, decltype(T0(0) op T1(0))> out;                                                    \
-        for (size_t i = 0; i < M; i++)                                                              \
-            out[i] = a[i] op b[i];                                                                  \
-        return out;                                                                                 \
+#define ESEED_MAT_BIN_MM(op)                                                                          \
+    template <size_t M, size_t N, typename T0, typename T1>                                           \
+    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, const Mat<M, N, T1> &b) { \
+        Mat<M, N, decltype(T0(0) op T1(0))> out;                                                      \
+        for (size_t i = 0; i < M; i++)                                                                \
+            out[i] = a[i] op b[i];                                                                    \
+        return out;                                                                                   \
     }
 
-#define ESEED_MAT_BIN_MS(op)                                                             \
-    template <size_t M, size_t N, typename T0, typename T1>                              \
-    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, const T1 &b) \
-    {                                                                                    \
-        Mat<M, N, decltype(T0(0) op T1(0))> out;                                         \
-        for (size_t i = 0; i < M; i++)                                                   \
-            out[i] = a[i] op b;                                                          \
-        return out;                                                                      \
+#define ESEED_MAT_BIN_MS(op)                                                               \
+    template <size_t M, size_t N, typename T0, typename T1>                                \
+    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, const T1 &b) { \
+        Mat<M, N, decltype(T0(0) op T1(0))> out;                                           \
+        for (size_t i = 0; i < M; i++)                                                     \
+            out[i] = a[i] op b;                                                            \
+        return out;                                                                        \
     }
 
-#define ESEED_MAT_BIN_SM(op)                                                             \
-    template <size_t M, size_t N, typename T0, typename T1>                              \
-    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const T0 &a, const Mat<M, N, T1> &b) \
-    {                                                                                    \
-        Mat<M, N, decltype(T0(0) op T1(0))> out;                                         \
-        for (size_t i = 0; i < M; i++)                                                   \
-            out[i] = a op b[i];                                                          \
-        return out;                                                                      \
+#define ESEED_MAT_BIN_SM(op)                                                               \
+    template <size_t M, size_t N, typename T0, typename T1>                                \
+    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const T0 &a, const Mat<M, N, T1> &b) { \
+        Mat<M, N, decltype(T0(0) op T1(0))> out;                                           \
+        for (size_t i = 0; i < M; i++)                                                     \
+            out[i] = a op b[i];                                                            \
+        return out;                                                                        \
     }
 
-#define ESEED_MAT_ASSN_MM(op)                                                                  \
-    template <size_t M, size_t N, typename T0, typename T1>                                    \
-    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, const Mat<M, N, T1> &b) \
-    {                                                                                          \
-        for (size_t i = 0; i < M; i++)                                                         \
-            a[i] op b[i];                                                                      \
-        return a;                                                                              \
+#define ESEED_MAT_ASSN_MM(op)                                                                    \
+    template <size_t M, size_t N, typename T0, typename T1>                                      \
+    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, const Mat<M, N, T1> &b) { \
+        for (size_t i = 0; i < M; i++)                                                           \
+            a[i] op b[i];                                                                        \
+        return a;                                                                                \
     }
 
-#define ESEED_MAT_ASSN_MS(op)                                                       \
-    template <size_t M, size_t N, typename T0, typename T1>                         \
-    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, const T1 &b) \
-    {                                                                               \
-        for (size_t i = 0; i < M; i++)                                              \
-            a[i] op b;                                                              \
-        return a;                                                                   \
+#define ESEED_MAT_ASSN_MS(op)                                                         \
+    template <size_t M, size_t N, typename T0, typename T1>                           \
+    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, const T1 &b) { \
+        for (size_t i = 0; i < M; i++)                                                \
+            a[i] op b;                                                                \
+        return a;                                                                     \
     }
 
 ESEED_MAT_PRE(++)
@@ -394,4 +366,4 @@ ESEED_MAT_ASSN_MS(^=)
 ESEED_MAT_ASSN_MS(<<=)
 ESEED_MAT_ASSN_MS(>>=)
 
-} // namespace eseed::math
+}
