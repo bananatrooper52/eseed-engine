@@ -3,36 +3,30 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace esd::math
-{
+namespace esd::math {
 
 template <typename T>
-inline T abs(const T &n)
-{
+inline T abs(const T &n) {
     return n < 0 ? -n : n;
 }
 
 template <typename T>
-inline T trunc(const T &n)
-{
+inline T trunc(const T &n) {
     return std::trunc(n);
 }
 
 template <typename T>
-inline T floor(const T &n)
-{
+inline T floor(const T &n) {
     return std::floor(n);
 }
 
 template <typename T>
-inline T ceil(const T &n)
-{
+inline T ceil(const T &n) {
     return std::ceil(n);
 }
 
 template <typename T>
-inline T round(const T &n)
-{
+inline T round(const T &n) {
     return std::round(n);
 }
 
@@ -42,30 +36,26 @@ inline T round(const T &n)
 // Warning: NaN becomes 0, Inifinity becomes 1, -Infinity becomes -1
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I itrunc(const T &n)
-{
+inline I itrunc(const T &n) {
     return (I)n;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I ifloor(const T &n)
-{
+inline I ifloor(const T &n) {
     I ni = (I)n;
     return n < ni ? ni - 1 : ni;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I iceil(const T &n)
-{
+inline I iceil(const T &n) {
     I ni = (I)n;
     return n > ni ? ni + 1 : ni;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I iround(const T &n)
-{
+inline I iround(const T &n) {
     I ni = (I)n;
     return n > 0 ? (n - ni >= 0.5 ? ni + 1 : ni) : (n - ni <= -0.5 ? ni - 1 : ni);
 }
 
-} // namespace eseed::math
+}
