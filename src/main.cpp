@@ -1,13 +1,14 @@
 #include <iostream>
 
 #include <vector>
-#include <eseed/graphics/window/window.hpp>
-#include <eseed/graphics/rendering/rendercontext.hpp>
+#include <eseed/window/window.hpp>
 #include <eseed/logging/logger.hpp>
 
-using namespace esd::graphics;
+#include "gpu/gpu.hpp"
+
 using namespace esd::logging;
 using namespace esd::math;
+using namespace esd::window;
 
 int main() {
     // Settings for main logger
@@ -19,15 +20,13 @@ int main() {
         "ESeed Engine"
     );
 
-    // Create render context
-    RenderContext ctx(window, true);
-    ctx.init();
+    Gpu gpu(window);
 
     // Poll window updates and redraw until close is requested
     while (!window->isCloseRequested()) {
         window->poll();
-        
-        ctx.render();
+
+        gpu.render();
 
         window->update();
     }
