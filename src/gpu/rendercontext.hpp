@@ -4,9 +4,9 @@
 #include <vulkan/vulkan.hpp>
 #include <optional>
 
-class Gpu {
+class RenderContext {
 public:
-    Gpu(std::shared_ptr<esd::window::Window> window = nullptr);
+    RenderContext(std::shared_ptr<esd::window::Window> window = nullptr);
     void render();
     std::vector<uint8_t> loadShaderCode(std::string path);
 
@@ -15,11 +15,6 @@ public:
     vk::Device getDevice() { return device; }
 
 private:
-    // Used to return queue family indexes along with a device
-    struct DeviceInfo {
-        vk::Device device;
-        std::optional<uint32_t> graphicsQueueFamily;
-    };
 
     // Main objects
     vk::Instance instance;
@@ -27,6 +22,7 @@ private:
     vk::Device device;
 
     // Queues
+    std::optional<uint32_t> graphicsQueueFamily;
     vk::Queue graphicsQueue;
 
     // Graphics
@@ -45,46 +41,43 @@ private:
     vk::Semaphore imageAvailableSemaphore;
     vk::Semaphore renderFinishedSemaphore;
 
-    //
+    // Buffer
+    vk::Buffer vertexBuffer;
+    vk::DeviceMemory vertexBufferMemory;
+    vk::MemoryRequirements memoryRequirements;
 
-    // Create a Vulkan instance
-    // If a window is provided, the required extensions will be enabled
-    static vk::Instance createInstance(
+    void createInstance(
         bool enableLayers = false,
         std::shared_ptr<esd::window::Window> window = nullptr
     );
 
-    // Find a physical device
-    static vk::PhysicalDevice findPhysicalDevice(vk::Instance instance);
+    void findPhysicalDevice(vk::Instance instance);
 
-    // Create a Vulkan device from the provided instance
-    // Returns an object containing the device and the found queue families
-    static DeviceInfo createDevice(
+    void createDevice(
         vk::Instance instance,
         vk::PhysicalDevice physicalDevice,
         vk::SurfaceKHR surface
     );
 
-    // Create a swapchain
-    static vk::SwapchainKHR createSwapchain(
+    void createSwapchain(
         vk::PhysicalDevice physicalDevice,
         vk::Device device,
         vk::SurfaceKHR surface,
         vk::SurfaceFormatKHR surfaceFormat
     );
 
-    static std::vector<vk::ImageView> createSwapchainImageViews(
+    void createSwapchainImageViews(
         vk::Device device, 
         vk::SwapchainKHR swapchain,
         vk::Format format
     );
 
-    static vk::RenderPass createRenderPass(
+    void createRenderPass(
         vk::Device device,
         vk::SurfaceFormatKHR surfaceFormat
     );
 
-    static vk::Pipeline createRenderPipeline(
+    void createRenderPipeline(
         vk::Device device,
         vk::RenderPass renderPass,
         const std::vector<uint8_t>& vertShaderCode,
@@ -93,12 +86,12 @@ private:
         float height
     );
 
-    static vk::ShaderModule createShaderModule(
+    vk::ShaderModule createShaderModule(
         vk::Device device,
         const std::vector<uint8_t>& code
     );
 
-    static std::vector<vk::Framebuffer> createSwapchainFramebuffers(
+    void createSwapchainFramebuffers(
         vk::Device device,
         vk::SwapchainKHR swapchain,
         vk::RenderPass renderPass,
@@ -107,14 +100,16 @@ private:
         uint32_t height
     );
 
-    static vk::CommandPool createCommandPool(
+    void createCommandPool(
         vk::Device device,
         uint32_t queueFamily
     );
 
-    static std::vector<vk::CommandBuffer> createCommandBuffers(
+    void createCommandBuffers(
         vk::Device device,
         vk::CommandPool commandPool,
         uint32_t count
     );
+
+    void recordCommandBuffers();
 };

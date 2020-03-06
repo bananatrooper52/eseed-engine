@@ -4,7 +4,7 @@
 #include <eseed/window/window.hpp>
 #include <eseed/logging/logger.hpp>
 
-#include "gpu/gpu.hpp"
+#include "gpu/rendercontext.hpp"
 
 using namespace esd::logging;
 using namespace esd::math;
@@ -20,13 +20,13 @@ int main() {
         "ESeed Engine"
     );
 
-    Gpu gpu(window);
+    RenderContext renderContext(window);
 
     // Poll window updates and redraw until close is requested
     while (!window->isCloseRequested()) {
         window->poll();
 
-        gpu.render();
+        renderContext.render();
 
         window->update();
     }

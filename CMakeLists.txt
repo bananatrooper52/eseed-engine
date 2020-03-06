@@ -12,7 +12,7 @@ add_subdirectory(dependencies/window)
 
 add_executable(eseed_engine 
     src/main.cpp
-    src/gpu/gpu.cpp
+    src/gpu/rendercontext.cpp
 )
 target_link_libraries(eseed_engine eseed_logging eseed_math eseed_window)
 
