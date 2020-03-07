@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <ostream>
 #include <array>
+#include <algorithm>
 
 namespace esd::math {
 

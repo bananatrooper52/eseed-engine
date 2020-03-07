@@ -10,6 +10,8 @@ add_subdirectory(dependencies/math)
 add_subdirectory(dependencies/logging)
 add_subdirectory(dependencies/window)
 
+add_definitions(-DNOMINMAX)
+
 add_executable(eseed_engine 
     src/main.cpp
     src/gpu/rendercontext.cpp

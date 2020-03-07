@@ -1,5 +1,7 @@
 #pragma once
 
+#include "renderpipeline.hpp"
+
 #include <eseed/window/window.hpp>
 #include <vulkan/vulkan.hpp>
 #include <optional>
@@ -15,6 +17,7 @@ public:
     vk::Device getDevice() { return device; }
 
 private:
+    std::optional<RenderPipeline> renderPipeline;
 
     // Main objects
     vk::Instance instance;
@@ -25,10 +28,6 @@ private:
     std::optional<uint32_t> graphicsQueueFamily;
     vk::Queue graphicsQueue;
 
-    // Graphics
-    vk::RenderPass renderPass;
-    vk::Pipeline pipeline;
-
     // Presentation
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
@@ -37,7 +36,6 @@ private:
 
     // Commands
     vk::CommandPool commandPool;
-    std::vector<vk::CommandBuffer> commandBuffers;
     vk::Semaphore imageAvailableSemaphore;
     vk::Semaphore renderFinishedSemaphore;
 
@@ -72,44 +70,13 @@ private:
         vk::Format format
     );
 
-    void createRenderPass(
-        vk::Device device,
-        vk::SurfaceFormatKHR surfaceFormat
-    );
-
-    void createRenderPipeline(
-        vk::Device device,
-        vk::RenderPass renderPass,
-        const std::vector<uint8_t>& vertShaderCode,
-        const std::vector<uint8_t>& fragShaderCode,
-        float width,
-        float height
-    );
-
     vk::ShaderModule createShaderModule(
         vk::Device device,
         const std::vector<uint8_t>& code
-    );
-
-    void createSwapchainFramebuffers(
-        vk::Device device,
-        vk::SwapchainKHR swapchain,
-        vk::RenderPass renderPass,
-        std::vector<vk::ImageView> imageViews,
-        uint32_t width,
-        uint32_t height
     );
 
     void createCommandPool(
         vk::Device device,
         uint32_t queueFamily
     );
-
-    void createCommandBuffers(
-        vk::Device device,
-        vk::CommandPool commandPool,
-        uint32_t count
-    );
-
-    void recordCommandBuffers();
 };

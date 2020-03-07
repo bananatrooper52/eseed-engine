@@ -33,33 +33,7 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
     auto surfaceCapabilities = 
         physicalDevice.getSurfaceCapabilitiesKHR(surface);
 
-    createRenderPass(device, surfaceFormat);
-
-    createRenderPipeline(
-        device,
-        renderPass,
-        loadShaderCode("./resources/shaders/test/test.vert.spv"),
-        loadShaderCode("./resources/shaders/test/test.frag.spv"),
-        (float)surfaceCapabilities.maxImageExtent.width,
-        (float)surfaceCapabilities.maxImageExtent.height
-    );
-
-    createSwapchainFramebuffers(
-        device, 
-        swapchain, 
-        renderPass, 
-        swapchainImageViews,
-        surfaceCapabilities.maxImageExtent.width,
-        surfaceCapabilities.maxImageExtent.height
-    );
-
     createCommandPool(device, *graphicsQueueFamily);
-
-    createCommandBuffers(
-        device, 
-        commandPool, 
-        (uint32_t)swapchainImageViews.size()
-    );
 
     imageAvailableSemaphore = device.createSemaphore({});
     renderFinishedSemaphore = device.createSemaphore({});
@@ -114,7 +88,23 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
     memcpy(data, vertices.data(), (size_t)vertexBufferByteLength);
     device.unmapMemory(vertexBufferMemory);
 
-    recordCommandBuffers();
+    renderPipeline = RenderPipeline(
+        device,
+        swapchainImageViews,
+        surfaceFormat,
+        commandPool,
+        (esd::math::Vec2<float>)window->getSize(),
+        createShaderModule(
+            device, 
+            loadShaderCode("resources/shaders/test/test.vert.spv")
+        ),
+        createShaderModule(
+            device, 
+            loadShaderCode("resources/shaders/test/test.frag.spv")
+        )
+    );
+
+    renderPipeline->addVertexBuffer(vertexBuffer);
 }
 
 void RenderContext::render() {
@@ -141,7 +131,7 @@ void RenderContext::render() {
         .setSignalSemaphoreCount((uint32_t)signalSemaphores.size())
         .setPSignalSemaphores(signalSemaphores.data())
         .setCommandBufferCount(1)
-        .setPCommandBuffers(&commandBuffers[imageIndex]);        
+        .setPCommandBuffers(&renderPipeline->getCommandBuffer(imageIndex));        
 
     graphicsQueue.submit(1, &si, nullptr);
 
@@ -308,147 +298,6 @@ void RenderContext::createSwapchainImageViews(
     }
 }
 
-void RenderContext::createRenderPass(
-    vk::Device device,
-    vk::SurfaceFormatKHR surfaceFormat
-) {
-    // Attachment should be cleared at start of render and saved at end
-    // We don't care about initial layout of attachment since it will be blank
-    // However, we will be displaying it directly to surface, so optimize
-    // for that
-    auto colorAttachmentDesc = vk::AttachmentDescription()
-        .setFormat(surfaceFormat.format)
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
-    // The color attachment is bound to location 0 in shader
-    auto colorAttachmentRef = vk::AttachmentReference()
-        .setAttachment(0)
-        .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
-    auto subpassDesc = vk::SubpassDescription()
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-        .setColorAttachmentCount(1)
-        .setPColorAttachments(&colorAttachmentRef);
-
-    renderPass = device.createRenderPass(vk::RenderPassCreateInfo()
-            .setAttachmentCount(1)
-            .setPAttachments(&colorAttachmentDesc)
-            .setSubpassCount(1)
-            .setPSubpasses(&subpassDesc)
-    );
-}
-
-void RenderContext::createRenderPipeline(
-    vk::Device device,
-    vk::RenderPass renderPass,
-    const std::vector<uint8_t>& vertShaderCode,
-    const std::vector<uint8_t>& fragShaderCode,
-    float width,
-    float height
-) {
-    // Create shaders
-    std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCis;
-    shaderStageCis.push_back(vk::PipelineShaderStageCreateInfo() // Vertex
-        .setStage(vk::ShaderStageFlagBits::eVertex)
-        .setModule(createShaderModule(device, vertShaderCode))
-        .setPName("main")
-    );
-    shaderStageCis.push_back(vk::PipelineShaderStageCreateInfo() // Fragment
-        .setStage(vk::ShaderStageFlagBits::eFragment)
-        .setModule(createShaderModule(device, fragShaderCode))
-        .setPName("main")
-    );
-
-    auto vertexBindingDescription = vk::VertexInputBindingDescription()
-        .setBinding(0)
-        .setStride(sizeof(float) * 2)
-        .setInputRate(vk::VertexInputRate::eVertex);
-
-    std::array<vk::VertexInputAttributeDescription, 1> 
-        vertexAttributeDescriptions;
-
-    vertexAttributeDescriptions[0]
-        .setBinding(0)
-        .setLocation(0)
-        .setFormat(vk::Format::eR32G32Sfloat)
-        .setOffset(0);
-
-    auto vertexInputStateCi = vk::PipelineVertexInputStateCreateInfo()
-        .setVertexBindingDescriptionCount(1)
-        .setPVertexBindingDescriptions(&vertexBindingDescription)
-        .setVertexAttributeDescriptionCount(1)
-        .setPVertexAttributeDescriptions(vertexAttributeDescriptions.data());
-
-    auto inputAssemblyStateCi = vk::PipelineInputAssemblyStateCreateInfo()
-        .setTopology(vk::PrimitiveTopology::eTriangleList);
-
-    // Viewport covers entire width and height
-    auto viewport = vk::Viewport()
-        .setMinDepth(0)
-        .setMaxDepth(1)
-        .setWidth(width)
-        .setHeight(height);
-
-    // Scissor covers entire width and height
-    auto scissor = vk::Rect2D()
-        .setExtent(vk::Extent2D((uint32_t)width, (uint32_t)height));
-
-    auto viewportStateCi = vk::PipelineViewportStateCreateInfo()
-        .setViewportCount(1)
-        .setPViewports(&viewport)
-        .setScissorCount(1)
-        .setPScissors(&scissor);
-    
-    auto rasterizationStateCi = vk::PipelineRasterizationStateCreateInfo()
-        .setPolygonMode(vk::PolygonMode::eFill)
-        .setLineWidth(1)
-        .setCullMode(vk::CullModeFlagBits::eBack)
-        .setFrontFace(vk::FrontFace::eClockwise);
-
-    // No multisampling
-    auto multisampleStateCi = vk::PipelineMultisampleStateCreateInfo()
-        .setRasterizationSamples(vk::SampleCountFlagBits::e1);
-
-    // No color blending
-    auto colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
-        .setColorWriteMask(
-            vk::ColorComponentFlagBits::eR |
-            vk::ColorComponentFlagBits::eG |
-            vk::ColorComponentFlagBits::eB |
-            vk::ColorComponentFlagBits::eA
-        );
-
-    auto colorBlendStateCi = vk::PipelineColorBlendStateCreateInfo()
-        .setAttachmentCount(1)
-        .setPAttachments(&colorBlendAttachment);
-
-    // TODO: No uniforms
-    auto pipelineLayoutCi = vk::PipelineLayoutCreateInfo();
-
-    auto pipelineLayout = device.createPipelineLayout(pipelineLayoutCi);
-
-    pipeline = device.createGraphicsPipeline(
-        nullptr, 
-        vk::GraphicsPipelineCreateInfo()
-            .setStageCount(2)
-            .setPStages(shaderStageCis.data())
-            .setPVertexInputState(&vertexInputStateCi)
-            .setPInputAssemblyState(&inputAssemblyStateCi)
-            .setPViewportState(&viewportStateCi)
-            .setPRasterizationState(&rasterizationStateCi)
-            .setPMultisampleState(&multisampleStateCi)
-            .setPColorBlendState(&colorBlendStateCi)
-            .setLayout(pipelineLayout)
-            .setRenderPass(renderPass)
-            .setSubpass(0)
-    );
-}
-
 vk::ShaderModule RenderContext::createShaderModule(
     vk::Device device,
     const std::vector<uint8_t>& code
@@ -460,28 +309,6 @@ vk::ShaderModule RenderContext::createShaderModule(
     return device.createShaderModule(shaderModuleCi);
 }
 
-void RenderContext::createSwapchainFramebuffers(
-    vk::Device device,
-    vk::SwapchainKHR swapchain,
-    vk::RenderPass renderPass,
-    std::vector<vk::ImageView> imageViews,
-    uint32_t width,
-    uint32_t height
-) {
-    swapchainFramebuffers.resize(imageViews.size());
-
-    for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
-        auto framebufferCi = vk::FramebufferCreateInfo()
-            .setRenderPass(renderPass)
-            .setAttachmentCount(1)
-            .setPAttachments(&imageViews[i])
-            .setWidth(width)
-            .setHeight(height)
-            .setLayers(1);
-        swapchainFramebuffers[i] = device.createFramebuffer(framebufferCi);
-    }
-}
-
 void RenderContext::createCommandPool(
     vk::Device device,
     uint32_t queueFamily
@@ -489,66 +316,4 @@ void RenderContext::createCommandPool(
     commandPool = device.createCommandPool(vk::CommandPoolCreateInfo()
             .setQueueFamilyIndex(queueFamily)
     );
-}
-
-void RenderContext::createCommandBuffers(
-    vk::Device device,
-    vk::CommandPool commandPool,
-    uint32_t count
-) {
-    commandBuffers = device.allocateCommandBuffers(
-        vk::CommandBufferAllocateInfo()
-            .setCommandPool(commandPool)
-            .setLevel(vk::CommandBufferLevel::ePrimary)
-            .setCommandBufferCount(count)
-    );
-}
-
-void RenderContext::recordCommandBuffers() {
-    auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
-    
-    for (size_t i = 0; i < commandBuffers.size(); i++) {
-
-        const auto& commandBuffer = commandBuffers[i];
-        const auto& framebuffer = swapchainFramebuffers[i];
-
-        // Begin recording command buffer
-        auto commandBufferBi = vk::CommandBufferBeginInfo();
-        commandBuffer.begin(commandBufferBi);
-
-        auto clearValue = vk::ClearValue()
-            .setColor(vk::ClearColorValue()
-                .setFloat32({ 0.f, 0.f, 0.f, 1.f })
-            );
-        auto renderPassBi = vk::RenderPassBeginInfo()
-            .setRenderPass(renderPass)
-            .setFramebuffer(framebuffer)
-            .setRenderArea(
-                vk::Rect2D().setExtent(surfaceCapabilities.maxImageExtent)
-            )
-            .setClearValueCount(1)
-            .setPClearValues(&clearValue);
-
-        // COMMAND 0 - Initiate the render pass
-        commandBuffer.beginRenderPass(
-            renderPassBi, 
-            vk::SubpassContents::eInline
-        );
-
-        // COMMAND 1 - Bind the pipeline
-        commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-
-        // COMMAND 2 - Bind the vertex buffer
-        vk::DeviceSize offset = 0;
-        commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-
-        // COMMAND 3 - Draw
-        commandBuffer.draw(3, 1, 0, 0);
-
-        // COMMAND 4 - End the render pass
-        commandBuffer.endRenderPass();
-
-        // End recording command buffer
-        commandBuffer.end();
-    }
 }

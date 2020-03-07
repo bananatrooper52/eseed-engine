@@ -1,12 +1,18 @@
 #pragma once
 
+#include "window.hpp"
+
+#ifdef NOMINMAX
+#include <window.h>
+#else
 #define NOMINMAX
+#include <windows.h>
+#undef NOMINMAX
+#endif
 
 #include <string>
-#include <Windows.h>
 #include <eseed/math/types.hpp>
 #include <eseed/math/vec.hpp>
-#include "window.hpp"
 
 namespace esd::window {
 
