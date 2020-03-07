@@ -446,7 +446,6 @@ void RenderContext::createRenderPipeline(
             .setLayout(pipelineLayout)
             .setRenderPass(renderPass)
             .setSubpass(0)
-            .setLayout(pipelineLayout)
     );
 }
 
