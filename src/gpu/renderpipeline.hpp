@@ -66,6 +66,19 @@ private:
         );
     };
 
+    struct LayoutContainer {
+        vk::Device device;
+        
+        vk::PipelineLayout layout;
+
+        LayoutContainer(
+            vk::Device device,
+            std::vector<std::vector<vk::DescriptorSetLayoutBinding>> _setLayouts
+        );
+
+        ~LayoutContainer();
+    };
+
     esd::math::Vec2<float> size;
 
     vk::Device device;
@@ -110,5 +123,5 @@ private:
     static vk::PipelineRasterizationStateCreateInfo createRasterizationState();
     static vk::PipelineMultisampleStateCreateInfo createMultisampleState();
     static ColorBlendStateContainer createColorBlendState();
-    static vk::UniquePipelineLayout createLayout(vk::Device device);
+    static LayoutContainer createLayout(vk::Device device);
 };

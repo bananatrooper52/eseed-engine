@@ -41,7 +41,7 @@ RenderPipeline::RenderPipeline(
             .setPRasterizationState(&rasterizationState)
             .setPMultisampleState(&multisampleState)
             .setPColorBlendState(&colorBlendStateInfo.colorBlendState)
-            .setLayout(*layout)
+            .setLayout(layout.layout)
             .setRenderPass(renderPass)
             .setSubpass(0)
     );
@@ -116,6 +116,35 @@ RenderPipeline::ColorBlendStateContainer::ColorBlendStateContainer(
     colorBlendState = vk::PipelineColorBlendStateCreateInfo()
         .setAttachmentCount((uint32_t)blendStates.size())
         .setPAttachments(blendStates.data());
+}
+
+RenderPipeline::LayoutContainer::LayoutContainer(
+    vk::Device device,
+    std::vector<std::vector<vk::DescriptorSetLayoutBinding>> setLayouts
+) : device(device) {
+
+    std::vector<vk::DescriptorSetLayout> setLayoutObjects(setLayouts.size());
+
+    for (size_t i = 0; i < setLayoutObjects.size(); i++) {
+        setLayoutObjects[i] = device.createDescriptorSetLayout(
+            vk::DescriptorSetLayoutCreateInfo()
+                .setBindingCount((uint32_t)setLayouts[i].size())
+                .setPBindings(setLayouts[i].data())
+        );
+    }
+
+    layout = device.createPipelineLayout(vk::PipelineLayoutCreateInfo()
+        .setSetLayoutCount((uint32_t)setLayoutObjects.size())
+        .setPSetLayouts(setLayoutObjects.data())
+    );
+
+    for (size_t i = 0; i < setLayoutObjects.size(); i++) {
+        device.destroyDescriptorSetLayout(setLayoutObjects[i]);
+    }
+}
+
+RenderPipeline::LayoutContainer::~LayoutContainer() {
+    device.destroyPipelineLayout(layout);
 }
 
 void RenderPipeline::recordCommandBuffers() {
@@ -337,7 +366,9 @@ vk::PipelineMultisampleStateCreateInfo
         .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 }
 
-RenderPipeline::ColorBlendStateContainer RenderPipeline::createColorBlendState() {
+RenderPipeline::ColorBlendStateContainer 
+    RenderPipeline::createColorBlendState() 
+{
 
     return ColorBlendStateContainer(
         {
@@ -353,7 +384,19 @@ RenderPipeline::ColorBlendStateContainer RenderPipeline::createColorBlendState()
     );
 }
 
-vk::UniquePipelineLayout RenderPipeline::createLayout(vk::Device device) {
-    // TODO: no uniforms
-    return device.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo());
+RenderPipeline::LayoutContainer 
+    RenderPipeline::createLayout(vk::Device device) 
+{
+    return LayoutContainer(
+        device,
+        {
+            {
+                vk::DescriptorSetLayoutBinding()
+                    .setBinding(0)
+                    .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                    .setDescriptorCount(1)
+                    .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+            }
+        }
+    );
 }
