@@ -8,7 +8,7 @@ RenderPipeline::RenderPipeline(
     esd::math::Vec2<float> size,
     vk::ShaderModule vertShader,
     vk::ShaderModule fragShader
-) : device(device), size(size) {
+) : device(device), size(size), commandPool(commandPool) {
 
     auto renderPassAttachments = createAttachments(surfaceFormat);
     auto renderPassSubpassInfos = createSubpasses();
@@ -41,7 +41,7 @@ RenderPipeline::RenderPipeline(
             .setPRasterizationState(&rasterizationState)
             .setPMultisampleState(&multisampleState)
             .setPColorBlendState(&colorBlendStateInfo.colorBlendState)
-            .setLayout(layout)
+            .setLayout(*layout)
             .setRenderPass(renderPass)
             .setSubpass(0)
     );
@@ -55,9 +55,63 @@ RenderPipeline::RenderPipeline(
     );
 }
 
+RenderPipeline::~RenderPipeline() {
+    device.freeCommandBuffers(commandPool, commandBuffers);
+    for (auto framebuffer : framebuffers) 
+        device.destroyFramebuffer(framebuffer);
+    device.destroyPipeline(pipeline);
+    device.destroyRenderPass(renderPass);
+}
+
 void RenderPipeline::addVertexBuffer(vk::Buffer buffer) {
-    vertexBuffer = buffer;
+    vertexBuffers.push_back(buffer);
     recordCommandBuffers();
+}
+
+RenderPipeline::SubpassContainer::SubpassContainer(
+    std::vector<vk::AttachmentReference> _attachmentReferences
+) {
+    attachmentReferences = _attachmentReferences;
+    subpass = vk::SubpassDescription()
+        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setColorAttachmentCount((uint32_t)attachmentReferences.size())
+        .setPColorAttachments(attachmentReferences.data());
+}
+
+RenderPipeline::VertexInputStateContainer::VertexInputStateContainer(
+    std::vector<vk::VertexInputBindingDescription> _bindings,
+    std::vector<vk::VertexInputAttributeDescription> _attributes
+) {
+    bindings = _bindings;
+    attributes = _attributes;
+    vertexInputState = vk::PipelineVertexInputStateCreateInfo()
+        .setVertexBindingDescriptionCount((uint32_t)bindings.size())
+        .setPVertexBindingDescriptions(bindings.data())
+        .setVertexAttributeDescriptionCount((uint32_t)attributes.size())
+        .setPVertexAttributeDescriptions(attributes.data());
+}
+
+RenderPipeline::ViewportStateContainer::ViewportStateContainer(
+    std::vector<vk::Viewport> _viewports,
+    std::vector<vk::Rect2D> _scissors
+) {
+    viewports = _viewports;
+    scissors = _scissors;
+    viewportState = vk::PipelineViewportStateCreateInfo()
+        .setViewportCount((uint32_t)viewports.size())
+        .setPViewports(viewports.data())
+        .setScissorCount((uint32_t)scissors.size())
+        .setPScissors(scissors.data());
+}
+
+RenderPipeline::ColorBlendStateContainer::ColorBlendStateContainer(
+    std::vector<vk::PipelineColorBlendAttachmentState> _blendStates
+) {
+    blendStates = _blendStates;
+
+    colorBlendState = vk::PipelineColorBlendStateCreateInfo()
+        .setAttachmentCount((uint32_t)blendStates.size())
+        .setPAttachments(blendStates.data());
 }
 
 void RenderPipeline::recordCommandBuffers() {
@@ -86,13 +140,16 @@ void RenderPipeline::recordCommandBuffers() {
             pipeline
         );
 
-        // Bind vertex buffer
-        vk::DeviceSize offset = 0;
-        commandBuffers[i].bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+        // Draw each vertex buffer
+        for (auto vertexBuffer : vertexBuffers) {
+            // Bind vertex buffer
+            vk::DeviceSize offset = 0;
+            commandBuffers[i].bindVertexBuffers(0, 1, &vertexBuffer, &offset);
 
-        // Draw
-        // TODO: remove hard-coded vertex count
-        commandBuffers[i].draw(3, 1, 0, 0);
+            // Draw
+            // TODO: remove hard-coded vertex count
+            commandBuffers[i].draw(3, 1, 0, 0);
+        }
 
         // End render pass
         commandBuffers[i].endRenderPass();
@@ -152,28 +209,24 @@ RenderPipeline::createAttachments(vk::SurfaceFormatKHR surfaceFormat) {
     };
 }
 
-std::vector<RenderPipeline::SubpassInfo> RenderPipeline::createSubpasses() 
+std::vector<RenderPipeline::SubpassContainer> RenderPipeline::createSubpasses() 
 {
-    std::vector<SubpassInfo> subpassInfos(1);
-
-    subpassInfos[0].attachmentReferences = {
-        // For attachment 0
-        vk::AttachmentReference()
-            .setAttachment(0)
-            .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-    };
-    subpassInfos[0].subpass = vk::SubpassDescription()
-        .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-        .setColorAttachmentCount(
-            (uint32_t)subpassInfos[0].attachmentReferences.size()
-        )
-        .setPColorAttachments(subpassInfos[0].attachmentReferences.data());
+    std::vector<SubpassContainer> subpassInfos;
+    
+    subpassInfos.push_back(
+        SubpassContainer({
+            // For attachment 0
+            vk::AttachmentReference()
+                .setAttachment(0)
+                .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+        })
+    );
 
     return subpassInfos;
 }
 
 std::vector<vk::SubpassDescription> RenderPipeline::extractSubpasses(
-    std::vector<SubpassInfo> infos
+    std::vector<SubpassContainer> infos
 ) {
     std::vector<vk::SubpassDescription> out(infos.size());
     for (size_t i = 0; i < out.size(); i++) {
@@ -206,33 +259,26 @@ std::vector<vk::PipelineShaderStageCreateInfo> RenderPipeline::createStages(
     return stages;
 }
 
-RenderPipeline::VertexInputStateInfo RenderPipeline::createVertexInputState() {
-    VertexInputStateInfo info;
-    
-    info.bindings = {
-        // 0 - Vertex positions
-        vk::VertexInputBindingDescription()
-            .setBinding(0)
-            .setStride(sizeof(esd::math::Vec2<float>))
-            .setInputRate(vk::VertexInputRate::eVertex)
-    };
-
-    info.attributes = {
-        // 0 - Main vertex data
-        vk::VertexInputAttributeDescription()
-            .setBinding(0)
-            .setLocation(0)
-            .setOffset(0)
-            .setFormat(vk::Format::eR32G32Sfloat)
-    };
-
-    info.vertexInputState = vk::PipelineVertexInputStateCreateInfo()
-        .setVertexBindingDescriptionCount((uint32_t)info.bindings.size())
-        .setPVertexBindingDescriptions(info.bindings.data())
-        .setVertexAttributeDescriptionCount((uint32_t)info.attributes.size())
-        .setPVertexAttributeDescriptions(info.attributes.data());
-
-    return info;
+RenderPipeline::VertexInputStateContainer 
+    RenderPipeline::createVertexInputState() 
+{
+    return VertexInputStateContainer(
+        {
+            // 0 - Vertex positions
+            vk::VertexInputBindingDescription()
+                .setBinding(0)
+                .setStride(sizeof(esd::math::Vec2<float>))
+                .setInputRate(vk::VertexInputRate::eVertex)
+        },
+        {
+            // 0 - Main vertex data
+            vk::VertexInputAttributeDescription()
+                .setBinding(0)
+                .setLocation(0)
+                .setOffset(0)
+                .setFormat(vk::Format::eR32G32Sfloat)
+        }
+    );
 }
 
 vk::PipelineInputAssemblyStateCreateInfo
@@ -242,32 +288,23 @@ vk::PipelineInputAssemblyStateCreateInfo
         .setTopology(vk::PrimitiveTopology::eTriangleList);
 }
 
-RenderPipeline::ViewportStateInfo RenderPipeline::createViewportState(
+RenderPipeline::ViewportStateContainer RenderPipeline::createViewportState(
     esd::math::Vec2<float> size
 ) {
-    ViewportStateInfo info;
-    
-    info.viewports = {
-        // 0 - Main viewport, whole screen
-        vk::Viewport()
-            .setWidth(size.x)
-            .setHeight(size.y)
-            .setMaxDepth(0)
-            .setMaxDepth(1)
-    };
-
-    info.scissors = {
-        // 0 - Main scissor, whole screen
-        vk::Rect2D().setExtent({ (uint32_t)size.x, (uint32_t)size.y })
-    };
-    
-    info.viewportState = vk::PipelineViewportStateCreateInfo()
-        .setViewportCount((uint32_t)info.viewports.size())
-        .setPViewports(info.viewports.data())
-        .setScissorCount((uint32_t)info.scissors.size())
-        .setPScissors(info.scissors.data());
-    
-    return info;
+    return ViewportStateContainer(
+        { // Viewports
+            // 0 - Main viewport, whole screen
+            vk::Viewport()
+                .setWidth(size.x)
+                .setHeight(size.y)
+                .setMaxDepth(0)
+                .setMaxDepth(1)
+        },
+        { // Scissors
+            // 0 - Main scissor, whole screen
+            vk::Rect2D().setExtent({ (uint32_t)size.x, (uint32_t)size.y })
+        }
+    );
 }
 
 vk::PipelineRasterizationStateCreateInfo 
@@ -287,29 +324,23 @@ vk::PipelineMultisampleStateCreateInfo
         .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 }
 
-RenderPipeline::ColorBlendStateInfo RenderPipeline::createColorBlendState() {
+RenderPipeline::ColorBlendStateContainer RenderPipeline::createColorBlendState() {
 
-    ColorBlendStateInfo info;
-
-    info.blendStates = {
-        // 0 - Main output color attachment
-        vk::PipelineColorBlendAttachmentState()
-            .setColorWriteMask(
-                vk::ColorComponentFlagBits::eR |
-                vk::ColorComponentFlagBits::eG |
-                vk::ColorComponentFlagBits::eB |
-                vk::ColorComponentFlagBits::eA
-            )
-    };
-
-    info.colorBlendState = vk::PipelineColorBlendStateCreateInfo()
-        .setAttachmentCount((uint32_t)info.blendStates.size())
-        .setPAttachments(info.blendStates.data());
-
-    return info;
+    return ColorBlendStateContainer(
+        {
+            // 0 - Main output color attachment
+            vk::PipelineColorBlendAttachmentState()
+                .setColorWriteMask(
+                    vk::ColorComponentFlagBits::eR |
+                    vk::ColorComponentFlagBits::eG |
+                    vk::ColorComponentFlagBits::eB |
+                    vk::ColorComponentFlagBits::eA
+                )
+        }
+    );
 }
 
-vk::PipelineLayout RenderPipeline::createLayout(vk::Device device) {
+vk::UniquePipelineLayout RenderPipeline::createLayout(vk::Device device) {
     // TODO: no uniforms
-    return device.createPipelineLayout(vk::PipelineLayoutCreateInfo());
+    return device.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo());
 }

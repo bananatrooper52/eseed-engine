@@ -5,6 +5,7 @@
 #include <eseed/window/window.hpp>
 #include <vulkan/vulkan.hpp>
 #include <optional>
+#include <memory>
 
 class RenderContext {
 public:
@@ -16,8 +17,10 @@ public:
     vk::PhysicalDevice getPhysicalDevice() { return physicalDevice; }
     vk::Device getDevice() { return device; }
 
+    vk::Buffer createVertexBuffer(std::vector<esd::math::Vec2<float>> vertices);
+
 private:
-    std::optional<RenderPipeline> renderPipeline;
+    std::unique_ptr<RenderPipeline> renderPipeline;
 
     // Main objects
     vk::Instance instance;

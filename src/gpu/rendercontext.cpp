@@ -38,57 +38,7 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
     imageAvailableSemaphore = device.createSemaphore({});
     renderFinishedSemaphore = device.createSemaphore({});
 
-    std::vector<esd::math::Vec2<float>> vertices = {
-        { 0, -0.5 },
-        { 0.5, 0.5 },
-        { -0.5, 0.5 }
-    };
-
-    vk::DeviceSize vertexBufferByteLength = 
-        sizeof(vertices[0]) * vertices.size();
-
-    vertexBuffer = device.createBuffer(vk::BufferCreateInfo()
-            .setSize(vertexBufferByteLength)
-            .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
-            .setSharingMode(vk::SharingMode::eExclusive)
-    );
-    memoryRequirements = device.getBufferMemoryRequirements(vertexBuffer);
-    auto memoryProperties = physicalDevice.getMemoryProperties();
-
-    uint32_t memoryTypeIndex;
-    vk::MemoryPropertyFlags properties = 
-        vk::MemoryPropertyFlagBits::eHostVisible |
-        vk::MemoryPropertyFlagBits::eHostCoherent;
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-        if (
-            memoryRequirements.memoryTypeBits & (1 << i) &&
-            (memoryProperties.memoryTypes[i].propertyFlags & properties) == 
-            properties
-        ) {
-            memoryTypeIndex = i;
-            break;
-        }
-    }
-
-    vertexBufferMemory = device.allocateMemory(vk::MemoryAllocateInfo()
-            .setAllocationSize(memoryRequirements.size)
-            .setMemoryTypeIndex(memoryTypeIndex)
-    );
-
-    device.bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
-
-    void* data;
-    device.mapMemory(
-        vertexBufferMemory, 
-        0, 
-        vertexBufferByteLength, 
-        vk::MemoryMapFlags(), 
-        &data
-    );
-    memcpy(data, vertices.data(), (size_t)vertexBufferByteLength);
-    device.unmapMemory(vertexBufferMemory);
-
-    renderPipeline = RenderPipeline(
+    renderPipeline = std::make_unique<RenderPipeline>(
         device,
         swapchainImageViews,
         surfaceFormat,
@@ -104,7 +54,17 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
         )
     );
 
-    renderPipeline->addVertexBuffer(vertexBuffer);
+    renderPipeline->addVertexBuffer(createVertexBuffer({
+        { -0.5, -0.5 },
+        { 0.5, 0.5 },
+        { -0.5, 0.5 }
+    }));
+
+    renderPipeline->addVertexBuffer(createVertexBuffer({
+        { -0.8, -0.8 },
+        { -0.6, -0.6 },
+        { -0.8, -0.6 },
+    }));
 }
 
 void RenderContext::render() {
@@ -160,6 +120,56 @@ std::vector<uint8_t> RenderContext::loadShaderCode(std::string path) {
     file.read((char*)code.data(), code.size());
 
     return code;
+}
+
+vk::Buffer RenderContext::createVertexBuffer(
+    std::vector<esd::math::Vec2<float>> vertices
+) {
+    vk::DeviceSize vertexBufferByteLength = 
+        sizeof(vertices[0]) * vertices.size();
+
+    auto vertexBuffer = device.createBuffer(vk::BufferCreateInfo()
+            .setSize(vertexBufferByteLength)
+            .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+            .setSharingMode(vk::SharingMode::eExclusive)
+    );
+    memoryRequirements = device.getBufferMemoryRequirements(vertexBuffer);
+    auto memoryProperties = physicalDevice.getMemoryProperties();
+
+    uint32_t memoryTypeIndex;
+    vk::MemoryPropertyFlags properties = 
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent;
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if (
+            memoryRequirements.memoryTypeBits & (1 << i) &&
+            (memoryProperties.memoryTypes[i].propertyFlags & properties) == 
+            properties
+        ) {
+            memoryTypeIndex = i;
+            break;
+        }
+    }
+
+    vertexBufferMemory = device.allocateMemory(vk::MemoryAllocateInfo()
+            .setAllocationSize(memoryRequirements.size)
+            .setMemoryTypeIndex(memoryTypeIndex)
+    );
+
+    device.bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+
+    void* data;
+    device.mapMemory(
+        vertexBufferMemory, 
+        0, 
+        vertexBufferByteLength, 
+        vk::MemoryMapFlags(), 
+        &data
+    );
+    memcpy(data, vertices.data(), (size_t)vertexBufferByteLength);
+    device.unmapMemory(vertexBufferMemory);
+
+    return vertexBuffer;
 }
 
 void RenderContext::createInstance(

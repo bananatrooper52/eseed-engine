@@ -6,13 +6,6 @@
 
 class RenderPipeline {
 public:
-    vk::Device device;
-    std::vector<vk::Framebuffer> framebuffers;
-
-    vk::RenderPass renderPass;
-    vk::Pipeline pipeline;
-    std::vector<vk::CommandBuffer> commandBuffers;
-
     RenderPipeline(
         vk::Device device, 
         std::vector<vk::ImageView> imageViews,
@@ -23,35 +16,62 @@ public:
         vk::ShaderModule fragShader
     );
 
+    ~RenderPipeline();
+
     void addVertexBuffer(vk::Buffer buffer);
     const vk::CommandBuffer& getCommandBuffer(uint32_t i) { return commandBuffers[i]; }
 
 private:
-    struct SubpassInfo {
+    struct SubpassContainer {
         std::vector<vk::AttachmentReference> attachmentReferences;
         vk::SubpassDescription subpass;
+
+        SubpassContainer(
+            std::vector<vk::AttachmentReference> _attachmentReferences
+        );
     };
 
-    struct VertexInputStateInfo {
+    struct VertexInputStateContainer {
         std::vector<vk::VertexInputBindingDescription> bindings;
         std::vector<vk::VertexInputAttributeDescription> attributes;
         vk::PipelineVertexInputStateCreateInfo vertexInputState;
+
+        VertexInputStateContainer(
+            std::vector<vk::VertexInputBindingDescription> _bindings,
+            std::vector<vk::VertexInputAttributeDescription> _attributes
+        );
     };
 
-    struct ViewportStateInfo {
+    struct ViewportStateContainer {
         std::vector<vk::Viewport> viewports;
         std::vector<vk::Rect2D> scissors;
         vk::PipelineViewportStateCreateInfo viewportState;
+
+        ViewportStateContainer(
+            std::vector<vk::Viewport> _viewports,
+            std::vector<vk::Rect2D> _scissors
+        );
     };
 
-    struct ColorBlendStateInfo {
+    struct ColorBlendStateContainer {
         std::vector<vk::PipelineColorBlendAttachmentState> blendStates;
         vk::PipelineColorBlendStateCreateInfo colorBlendState;
+
+        ColorBlendStateContainer(
+            std::vector<vk::PipelineColorBlendAttachmentState> _blendStates
+        );
     };
 
     esd::math::Vec2<float> size;
 
-    vk::Buffer vertexBuffer;
+    vk::Device device;
+    std::vector<vk::Framebuffer> framebuffers;
+    vk::CommandPool commandPool;
+    std::vector<vk::Buffer> vertexBuffers;
+
+    vk::RenderPass renderPass;
+    vk::Pipeline pipeline;
+    std::vector<vk::CommandBuffer> commandBuffers;
 
     void recordCommandBuffers();
 
@@ -71,20 +91,20 @@ private:
     static std::vector<vk::AttachmentDescription> createAttachments(
         vk::SurfaceFormatKHR surfaceFormat
     );
-    static std::vector<SubpassInfo> createSubpasses();
+    static std::vector<SubpassContainer> createSubpasses();
     static std::vector<vk::SubpassDescription> extractSubpasses(
-        std::vector<SubpassInfo> infos
+        std::vector<SubpassContainer> infos
     );
 
     static std::vector<vk::PipelineShaderStageCreateInfo> createStages(
         vk::ShaderModule vertShader,
         vk::ShaderModule fragShader
     );
-    static VertexInputStateInfo createVertexInputState();
+    static VertexInputStateContainer createVertexInputState();
     static vk::PipelineInputAssemblyStateCreateInfo createInputAssemblyState();
-    static ViewportStateInfo createViewportState(esd::math::Vec2<float> size);
+    static ViewportStateContainer createViewportState(esd::math::Vec2<float> size);
     static vk::PipelineRasterizationStateCreateInfo createRasterizationState();
     static vk::PipelineMultisampleStateCreateInfo createMultisampleState();
-    static ColorBlendStateInfo createColorBlendState();
-    static vk::PipelineLayout createLayout(vk::Device device);
+    static ColorBlendStateContainer createColorBlendState();
+    static vk::UniquePipelineLayout createLayout(vk::Device device);
 };
