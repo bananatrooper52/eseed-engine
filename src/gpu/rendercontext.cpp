@@ -54,17 +54,11 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
         )
     );
 
-    renderPipeline->addVertexBuffer(createVertexBuffer({
-        { -0.5, -0.5 },
-        { 0.5, 0.5 },
-        { -0.5, 0.5 }
-    }));
-
-    renderPipeline->addVertexBuffer(createVertexBuffer({
-        { -0.8, -0.8 },
-        { -0.6, -0.6 },
-        { -0.8, -0.6 },
-    }));
+    renderPipeline->registerMeshBuffer(createMeshBuffer(Mesh({
+        {{ -0.8, -0.8 }, { 1.f, 1.f, 1.f }},
+        {{ -0.6, -0.6 }, { 1.f, 0.f, 1.f }},
+        {{ -0.8, -0.6 }, { 0.f, 1.f, 0.f }}
+    })));
 }
 
 void RenderContext::render() {
@@ -122,18 +116,23 @@ std::vector<uint8_t> RenderContext::loadShaderCode(std::string path) {
     return code;
 }
 
-vk::Buffer RenderContext::createVertexBuffer(
-    std::vector<esd::math::Vec2<float>> vertices
+std::shared_ptr<MeshBuffer> RenderContext::createMeshBuffer(
+    const Mesh& mesh
 ) {
-    vk::DeviceSize vertexBufferByteLength = 
-        sizeof(vertices[0]) * vertices.size();
+    std::shared_ptr<MeshBuffer> meshBuffer = std::make_shared<MeshBuffer>();
+    meshBuffer->vertexCount = (uint32_t)mesh.vertices.size();
+    
+    vk::DeviceSize bufferByteLength = 
+        sizeof(mesh.vertices[0]) * mesh.vertices.size();
 
-    auto vertexBuffer = device.createBuffer(vk::BufferCreateInfo()
-            .setSize(vertexBufferByteLength)
+    meshBuffer->buffer = device.createBuffer(vk::BufferCreateInfo()
+            .setSize(bufferByteLength)
             .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
             .setSharingMode(vk::SharingMode::eExclusive)
     );
-    memoryRequirements = device.getBufferMemoryRequirements(vertexBuffer);
+
+    auto memoryRequirements = 
+        device.getBufferMemoryRequirements(meshBuffer->buffer);
     auto memoryProperties = physicalDevice.getMemoryProperties();
 
     uint32_t memoryTypeIndex;
@@ -151,25 +150,25 @@ vk::Buffer RenderContext::createVertexBuffer(
         }
     }
 
-    vertexBufferMemory = device.allocateMemory(vk::MemoryAllocateInfo()
+    meshBuffer->memory = device.allocateMemory(vk::MemoryAllocateInfo()
             .setAllocationSize(memoryRequirements.size)
             .setMemoryTypeIndex(memoryTypeIndex)
     );
 
-    device.bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+    device.bindBufferMemory(meshBuffer->buffer, meshBuffer->memory, 0);
 
     void* data;
     device.mapMemory(
-        vertexBufferMemory, 
+        meshBuffer->memory, 
         0, 
-        vertexBufferByteLength, 
+        bufferByteLength, 
         vk::MemoryMapFlags(), 
         &data
     );
-    memcpy(data, vertices.data(), (size_t)vertexBufferByteLength);
-    device.unmapMemory(vertexBufferMemory);
+    memcpy(data, mesh.vertices.data(), (size_t)bufferByteLength);
+    device.unmapMemory(meshBuffer->memory);
 
-    return vertexBuffer;
+    return meshBuffer;
 }
 
 void RenderContext::createInstance(

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "mesh.hpp"
+#include "meshbuffer.hpp"
+
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include <eseed/math/vec.hpp>
@@ -18,7 +21,8 @@ public:
 
     ~RenderPipeline();
 
-    void addVertexBuffer(vk::Buffer buffer);
+    size_t registerMeshBuffer(std::shared_ptr<MeshBuffer> meshBuffer);
+    void unregisterMeshBuffer(size_t id);
     const vk::CommandBuffer& getCommandBuffer(uint32_t i) { return commandBuffers[i]; }
 
 private:
@@ -67,7 +71,7 @@ private:
     vk::Device device;
     std::vector<vk::Framebuffer> framebuffers;
     vk::CommandPool commandPool;
-    std::vector<vk::Buffer> vertexBuffers;
+    std::vector<std::shared_ptr<MeshBuffer>> meshBuffers;
 
     vk::RenderPass renderPass;
     vk::Pipeline pipeline;

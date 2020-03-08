@@ -63,9 +63,13 @@ RenderPipeline::~RenderPipeline() {
     device.destroyRenderPass(renderPass);
 }
 
-void RenderPipeline::addVertexBuffer(vk::Buffer buffer) {
-    vertexBuffers.push_back(buffer);
+size_t RenderPipeline::registerMeshBuffer(
+    std::shared_ptr<MeshBuffer> meshBuffer
+) {
+    meshBuffers.push_back(meshBuffer);
     recordCommandBuffers();
+
+    return meshBuffers.size() - 1;
 }
 
 RenderPipeline::SubpassContainer::SubpassContainer(
@@ -141,14 +145,16 @@ void RenderPipeline::recordCommandBuffers() {
         );
 
         // Draw each vertex buffer
-        for (auto vertexBuffer : vertexBuffers) {
+        for (auto meshBuffer : meshBuffers) {
             // Bind vertex buffer
             vk::DeviceSize offset = 0;
-            commandBuffers[i].bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+            commandBuffers[i].bindVertexBuffers(
+                0, 1, &meshBuffer->buffer, &offset
+            );
 
             // Draw
             // TODO: remove hard-coded vertex count
-            commandBuffers[i].draw(3, 1, 0, 0);
+            commandBuffers[i].draw(meshBuffer->vertexCount, 1, 0, 0);
         }
 
         // End render pass
@@ -267,7 +273,7 @@ RenderPipeline::VertexInputStateContainer
             // 0 - Vertex positions
             vk::VertexInputBindingDescription()
                 .setBinding(0)
-                .setStride(sizeof(esd::math::Vec2<float>))
+                .setStride(sizeof(Vertex))
                 .setInputRate(vk::VertexInputRate::eVertex)
         },
         {
@@ -275,8 +281,15 @@ RenderPipeline::VertexInputStateContainer
             vk::VertexInputAttributeDescription()
                 .setBinding(0)
                 .setLocation(0)
-                .setOffset(0)
-                .setFormat(vk::Format::eR32G32Sfloat)
+                .setOffset(offsetof(Vertex, position))
+                .setFormat(vk::Format::eR32G32Sfloat),
+            
+            // 1 - Color data
+            vk::VertexInputAttributeDescription()
+                .setBinding(0)
+                .setLocation(1)
+                .setOffset(offsetof(Vertex, color))
+                .setFormat(vk::Format::eR32G32B32Sfloat)
         }
     );
 }

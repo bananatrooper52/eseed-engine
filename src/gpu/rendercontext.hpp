@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderpipeline.hpp"
+#include "meshbuffer.hpp"
 
 #include <eseed/window/window.hpp>
 #include <vulkan/vulkan.hpp>
@@ -17,7 +18,7 @@ public:
     vk::PhysicalDevice getPhysicalDevice() { return physicalDevice; }
     vk::Device getDevice() { return device; }
 
-    vk::Buffer createVertexBuffer(std::vector<esd::math::Vec2<float>> vertices);
+    std::shared_ptr<MeshBuffer> createMeshBuffer(const Mesh& mesh);
 
 private:
     std::unique_ptr<RenderPipeline> renderPipeline;
@@ -41,11 +42,6 @@ private:
     vk::CommandPool commandPool;
     vk::Semaphore imageAvailableSemaphore;
     vk::Semaphore renderFinishedSemaphore;
-
-    // Buffer
-    vk::Buffer vertexBuffer;
-    vk::DeviceMemory vertexBufferMemory;
-    vk::MemoryRequirements memoryRequirements;
 
     void createInstance(
         bool enableLayers = false,
