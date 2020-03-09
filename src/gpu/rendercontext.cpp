@@ -4,41 +4,40 @@
 
 RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
 
-    // Create instance
-    createInstance(true, window);
-    
-    // Create surface if window is provided
-    surface = window->createSurface(instance);
+    std::vector<const char*> instanceExtensions;
+    std::vector<const char*> instanceLayers;
 
-    // Find physical device
-    findPhysicalDevice(instance);
-
-    // Create device
-    createDevice(instance, physicalDevice, surface);
-
-    // Extract queues
-    graphicsQueue = device.getQueue(*graphicsQueueFamily, 0);
-
-    vk::SurfaceFormatKHR surfaceFormat;
-    for (auto format : physicalDevice.getSurfaceFormatsKHR(surface)) {
-        surfaceFormat = format;
-        break;
+    // If a window is provided, include its required extensions
+    if (window != nullptr) {
+        auto windowExtensions = window->getRequiredInstanceExtensionNames();
+        instanceExtensions.insert(
+            instanceExtensions.end(), 
+            windowExtensions.begin(), 
+            windowExtensions.end()
+        );
     }
 
-    // Create swapchain
-    createSwapchain(physicalDevice, device, surface, surfaceFormat);
+    // If layers are enabled, add them
+    instanceLayers.push_back("VK_LAYER_KHRONOS_validation");
 
-    createSwapchainImageViews(device, swapchain, surfaceFormat.format);
+    std::vector<const char*> deviceExtensions;
+    if (window) {
+        deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
 
-    auto surfaceCapabilities = 
-        physicalDevice.getSurfaceCapabilitiesKHR(surface);
+    resourceManager = std::make_shared<ResourceManager>(
+        instanceExtensions,
+        instanceLayers,
+        deviceExtensions,
+        window ? window->createSurface() : std::nullopt
+    );
 
     createCommandPool(device, *graphicsQueueFamily);
 
     imageAvailableSemaphore = device.createSemaphore({});
     renderFinishedSemaphore = device.createSemaphore({});
 
-    renderPipeline = std::make_unique<RenderPipeline>(
+    renderPipeline = std::make_shared<RenderPipeline>(
         device,
         swapchainImageViews,
         surfaceFormat,
@@ -65,12 +64,7 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
 }
 
 void RenderContext::render() {
-    uint32_t imageIndex = device.acquireNextImageKHR(
-        swapchain, 
-        UINT64_MAX, 
-        imageAvailableSemaphore, 
-        nullptr
-    ).value;
+    uint32_t imageIndex = presentManager->getNextImageIndex();
 
     std::vector<vk::Semaphore> waitSemaphores = {
         imageAvailableSemaphore
@@ -96,7 +90,7 @@ void RenderContext::render() {
         .setWaitSemaphoreCount((uint32_t)signalSemaphores.size())
         .setPWaitSemaphores(signalSemaphores.data())
         .setSwapchainCount(1)
-        .setPSwapchains(&swapchain)
+        .setPSwapchains(&presentManager->getSwapchain())
         .setPImageIndices(&imageIndex);
 
     graphicsQueue.presentKHR(pi);
@@ -178,23 +172,7 @@ void RenderContext::createInstance(
     bool enableLayers,
     std::shared_ptr<esd::window::Window> window
 ) {
-    std::vector<const char*> extensions;
-    std::vector<const char*> layers;
-
-    // If a window is provided, include its required extensions
-    if (window != nullptr) {
-        auto windowExtensions = window->getRequiredInstanceExtensionNames();
-        extensions.insert(
-            extensions.end(), 
-            windowExtensions.begin(), 
-            windowExtensions.end()
-        );
-    }
-
-    // If layers are enabled, add them
-    if (enableLayers) {
-        layers.push_back("VK_LAYER_KHRONOS_validation");
-    }
+    
     
     instance = vk::createInstance(vk::InstanceCreateInfo()
             .setEnabledExtensionCount((uint32_t)extensions.size())
@@ -257,57 +235,6 @@ void RenderContext::createDevice(
             .setEnabledExtensionCount((uint32_t)extensions.size())
             .setPpEnabledExtensionNames(extensions.data())
     );
-}
-
-void RenderContext::createSwapchain(
-    vk::PhysicalDevice physicalDevice,
-    vk::Device device,
-    vk::SurfaceKHR surface,
-    vk::SurfaceFormatKHR surfaceFormat
-) {
-    auto surfaceCapabilities = 
-        physicalDevice.getSurfaceCapabilitiesKHR(surface);
-
-    swapchain = device.createSwapchainKHR(vk::SwapchainCreateInfoKHR()
-            .setSurface(surface)
-            .setMinImageCount(surfaceCapabilities.minImageCount)
-            .setImageExtent(surfaceCapabilities.maxImageExtent)
-            .setImageFormat(surfaceFormat.format)
-            .setPreTransform(
-                surfaceCapabilities.currentTransform
-            )
-            .setPresentMode(vk::PresentModeKHR::eFifo)
-            .setImageSharingMode(vk::SharingMode::eExclusive)
-            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-            .setImageArrayLayers(1)
-            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-            .setClipped(true)
-    );
-}
-
-void RenderContext::createSwapchainImageViews(
-    vk::Device device,
-    vk::SwapchainKHR swapchain,
-    vk::Format format
-) {
-    auto images = device.getSwapchainImagesKHR(swapchain);
-
-    swapchainImageViews.resize(images.size());
-    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-        auto imageViewCi = vk::ImageViewCreateInfo()
-            .setImage(images[i])
-            .setFormat(format)
-            .setComponents(vk::ComponentMapping {}) // Empty cnstr, all identity
-            .setViewType(vk::ImageViewType::e2D)
-            .setSubresourceRange(vk::ImageSubresourceRange()
-                .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                .setBaseMipLevel(0)
-                .setLevelCount(1)
-                .setBaseArrayLayer(0)
-                .setLayerCount(1)
-            );
-        swapchainImageViews[i] = device.createImageView(imageViewCi);
-    }
 }
 
 vk::ShaderModule RenderContext::createShaderModule(

@@ -16,6 +16,8 @@ add_executable(eseed_engine
     src/main.cpp
     src/gpu/rendercontext.cpp
     src/gpu/renderpipeline.cpp
+    src/gpu/presentmanager.cpp
+    src/gpu/resourcemanager.cpp
 )
 target_link_libraries(eseed_engine eseed_logging eseed_math eseed_window)
 

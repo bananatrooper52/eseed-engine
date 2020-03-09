@@ -1,7 +1,10 @@
 #pragma once
 
+#include "resourcemanager.hpp"
 #include "renderpipeline.hpp"
+#include "presentmanager.hpp"
 #include "meshbuffer.hpp"
+#include "mesh.hpp"
 
 #include <eseed/window/window.hpp>
 #include <vulkan/vulkan.hpp>
@@ -11,63 +14,20 @@
 class RenderContext {
 public:
     RenderContext(std::shared_ptr<esd::window::Window> window = nullptr);
+
     void render();
     std::vector<uint8_t> loadShaderCode(std::string path);
-
-    vk::Instance getInstance() { return instance; }
-    vk::PhysicalDevice getPhysicalDevice() { return physicalDevice; }
-    vk::Device getDevice() { return device; }
-
     std::shared_ptr<MeshBuffer> createMeshBuffer(const Mesh& mesh);
 
 private:
-    std::unique_ptr<RenderPipeline> renderPipeline;
-
-    // Main objects
-    vk::Instance instance;
-    vk::PhysicalDevice physicalDevice;
-    vk::Device device;
-
-    // Queues
-    std::optional<uint32_t> graphicsQueueFamily;
-    vk::Queue graphicsQueue;
-
-    // Presentation
-    vk::SurfaceKHR surface;
-    vk::SwapchainKHR swapchain;
-    std::vector<vk::ImageView> swapchainImageViews;
-    std::vector<vk::Framebuffer> swapchainFramebuffers;
+    std::shared_ptr<ResourceManager> resourceManager;
+    std::shared_ptr<RenderPipeline> renderPipeline;
+    std::shared_ptr<PresentManager> presentManager;
 
     // Commands
     vk::CommandPool commandPool;
     vk::Semaphore imageAvailableSemaphore;
     vk::Semaphore renderFinishedSemaphore;
-
-    void createInstance(
-        bool enableLayers = false,
-        std::shared_ptr<esd::window::Window> window = nullptr
-    );
-
-    void findPhysicalDevice(vk::Instance instance);
-
-    void createDevice(
-        vk::Instance instance,
-        vk::PhysicalDevice physicalDevice,
-        vk::SurfaceKHR surface
-    );
-
-    void createSwapchain(
-        vk::PhysicalDevice physicalDevice,
-        vk::Device device,
-        vk::SurfaceKHR surface,
-        vk::SurfaceFormatKHR surfaceFormat
-    );
-
-    void createSwapchainImageViews(
-        vk::Device device, 
-        vk::SwapchainKHR swapchain,
-        vk::Format format
-    );
 
     vk::ShaderModule createShaderModule(
         vk::Device device,

@@ -207,22 +207,20 @@ std::vector<vk::CommandBuffer> RenderPipeline::createCommandBuffers(
 }
 
 std::vector<vk::Framebuffer> RenderPipeline::createFramebuffers(
-    vk::Device device,
-    vk::RenderPass renderPass,
-    std::vector<vk::ImageView> imageViews,
-    esd::math::Vec2<float> size
+    std::vector<vk::ImageView> imageViews
 ) {
     std::vector<vk::Framebuffer> swapchainFramebuffers(imageViews.size());
 
     for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
-        swapchainFramebuffers[i] = device.createFramebuffer(
+        swapchainFramebuffers[i] 
+            = resourceManager->getDevice().createFramebuffer(
             vk::FramebufferCreateInfo()
-                .setRenderPass(renderPass)
-                .setAttachmentCount(1)
-                .setPAttachments(&imageViews[i])
-                .setWidth((uint32_t)size.x)
-                .setHeight((uint32_t)size.y)
-                .setLayers(1)
+            .setRenderPass(renderPass)
+            .setAttachmentCount(1)
+            .setPAttachments(&imageViews[i])
+            .setWidth((uint32_t)size.x)
+            .setHeight((uint32_t)size.y)
+            .setLayers(1)
         );
     }
 

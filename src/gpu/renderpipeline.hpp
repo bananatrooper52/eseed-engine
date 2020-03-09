@@ -1,5 +1,6 @@
 #pragma once
 
+#include "presentmanager.hpp"
 #include "mesh.hpp"
 #include "meshbuffer.hpp"
 
@@ -9,12 +10,11 @@
 
 class RenderPipeline {
 public:
+    RenderPipeline(const RenderPipeline&) = delete;
     RenderPipeline(
-        vk::Device device, 
-        std::vector<vk::ImageView> imageViews,
-        vk::SurfaceFormatKHR surfaceFormat,
+        std::shared_ptr<PresentManager> presentManager,
+        vk::Device device,
         vk::CommandPool commandPool,
-        esd::math::Vec2<float> size,
         vk::ShaderModule vertShader,
         vk::ShaderModule fragShader
     );
@@ -79,13 +79,12 @@ private:
         ~LayoutContainer();
     };
 
+    std::shared_ptr<ResourceManager> rm;
     esd::math::Vec2<float> size;
-
-    vk::Device device;
     std::vector<vk::Framebuffer> framebuffers;
+
     vk::CommandPool commandPool;
     std::vector<std::shared_ptr<MeshBuffer>> meshBuffers;
-
     vk::RenderPass renderPass;
     vk::Pipeline pipeline;
     std::vector<vk::CommandBuffer> commandBuffers;
@@ -99,10 +98,7 @@ private:
     );
 
     static std::vector<vk::Framebuffer> createFramebuffers(
-        vk::Device device,
-        vk::RenderPass renderPass,
-        std::vector<vk::ImageView> imageViews,
-        esd::math::Vec2<float> size
+        std::vector<vk::ImageView> imageViews
     );
 
     static std::vector<vk::AttachmentDescription> createAttachments(
