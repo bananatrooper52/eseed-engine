@@ -1,7 +1,6 @@
 #pragma once
 
 #include "resourcemanager.hpp"
-#include "renderpipeline.hpp"
 #include "presentmanager.hpp"
 #include "meshbuffer.hpp"
 #include "mesh.hpp"
@@ -20,9 +19,8 @@ public:
     std::shared_ptr<MeshBuffer> createMeshBuffer(const Mesh& mesh);
 
 private:
-    std::shared_ptr<ResourceManager> resourceManager;
-    std::shared_ptr<RenderPipeline> renderPipeline;
-    std::shared_ptr<PresentManager> presentManager;
+    std::shared_ptr<ResourceManager> rm;
+    std::shared_ptr<PresentManager> pm;
 
     // Commands
     vk::CommandPool commandPool;
@@ -30,7 +28,6 @@ private:
     vk::Semaphore renderFinishedSemaphore;
 
     vk::ShaderModule createShaderModule(
-        vk::Device device,
         const std::vector<uint8_t>& code
     );
 

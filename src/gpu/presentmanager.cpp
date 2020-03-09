@@ -9,7 +9,7 @@ PresentManager::PresentManager(
 }
 
 uint32_t PresentManager::getNextImageIndex(vk::Semaphore semaphore) {
-    return resourceManager->getDevice().acquireNextImageKHR(
+    return rm->getDevice().acquireNextImageKHR(
         swapchain, 
         UINT64_MAX, 
         semaphore, 
@@ -37,9 +37,8 @@ void PresentManager::findSwapchainFormat() {
 void PresentManager::createSwapchain() {
     auto surfaceCapabilities = *rm->getSurfaceCapabilities();
 
-    swapchain = rm->getDevice().createSwapchainKHR(
-        vk::SwapchainCreateInfoKHR()
-        .setSurface(*resourceManager->getSurface())
+    swapchain = rm->getDevice().createSwapchainKHR(vk::SwapchainCreateInfoKHR()
+        .setSurface(*rm->getSurface())
         .setMinImageCount(surfaceCapabilities.minImageCount)
         .setImageExtent(surfaceCapabilities.maxImageExtent)
         .setImageFormat(swapchainFormat.format)

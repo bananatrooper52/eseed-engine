@@ -15,7 +15,6 @@ add_definitions(-DNOMINMAX)
 add_executable(eseed_engine 
     src/main.cpp
     src/gpu/rendercontext.cpp
-    src/gpu/renderpipeline.cpp
     src/gpu/presentmanager.cpp
     src/gpu/resourcemanager.cpp
 )

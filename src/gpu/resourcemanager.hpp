@@ -1,5 +1,7 @@
 #pragma once
 
+#include "eseed/window/window.hpp"
+
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include <optional>
@@ -10,7 +12,7 @@ public:
         const std::vector<const char*>& instanceExtensionNames,
         const std::vector<const char*>& instanceLayerNames,
         const std::vector<const char*>& deviceExtensionNames,
-        std::optional<vk::SurfaceKHR> surface
+        std::shared_ptr<esd::window::Window> window
     );
 
     std::optional<vk::SurfaceCapabilitiesKHR> getSurfaceCapabilities();
@@ -20,6 +22,9 @@ public:
     const vk::PhysicalDevice& getPhysicalDevice() { return physicalDevice; }
     const vk::Device& getDevice() { return device; }
     const std::optional<vk::SurfaceKHR>& getSurface() { return surface; }
+    const std::optional<uint32_t> getGraphicsQueueFamily() { 
+        return graphicsQueueFamily;
+    }
 
 private:
     vk::Instance instance;

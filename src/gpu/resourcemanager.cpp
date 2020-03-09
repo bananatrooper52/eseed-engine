@@ -4,8 +4,8 @@ ResourceManager::ResourceManager(
     const std::vector<const char*>& instanceExtensionNames,
     const std::vector<const char*>& instanceLayerNames,
     const std::vector<const char*>& deviceExtensionNames,
-    std::optional<vk::SurfaceKHR> surface
-) : surface(surface) {
+    std::shared_ptr<esd::window::Window> window
+) {
 
     // -- INSTANCE -- //
     
@@ -15,6 +15,10 @@ ResourceManager::ResourceManager(
         .setEnabledLayerCount((uint32_t)instanceLayerNames.size())
         .setPpEnabledLayerNames(instanceLayerNames.data())
     );
+
+    // -- SURFACE (IF WINDOW IS PRESENT) -- //
+
+    if (window) surface = window->createSurface(instance);
 
     // -- PHYSICAL DEVICE -- //
 
