@@ -64,6 +64,12 @@ ResourceManager::ResourceManager(
     );
 }
 
+ResourceManager::~ResourceManager() {
+    device.destroy();
+    if (surface) instance.destroySurfaceKHR(*surface);
+    instance.destroy();
+}
+
 std::optional<vk::SurfaceCapabilitiesKHR> 
     ResourceManager::getSurfaceCapabilities()
 {

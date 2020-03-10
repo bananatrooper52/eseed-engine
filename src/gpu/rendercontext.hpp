@@ -1,5 +1,6 @@
 #pragma once
 
+#include "renderpipeline.hpp"
 #include "resourcemanager.hpp"
 #include "presentmanager.hpp"
 #include "meshbuffer.hpp"
@@ -13,26 +14,20 @@
 class RenderContext {
 public:
     RenderContext(std::shared_ptr<esd::window::Window> window = nullptr);
+    ~RenderContext();
 
     void render();
+    std::shared_ptr<RenderPipeline> getRenderPipeline();
+
     std::vector<uint8_t> loadShaderCode(std::string path);
-    std::shared_ptr<MeshBuffer> createMeshBuffer(const Mesh& mesh);
+    vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code);
 
 private:
     std::shared_ptr<ResourceManager> rm;
     std::shared_ptr<PresentManager> pm;
+    std::shared_ptr<RenderPipeline> pipeline;
 
-    // Commands
-    vk::CommandPool commandPool;
+    vk::Queue graphicsQueue;
     vk::Semaphore imageAvailableSemaphore;
     vk::Semaphore renderFinishedSemaphore;
-
-    vk::ShaderModule createShaderModule(
-        const std::vector<uint8_t>& code
-    );
-
-    void createCommandPool(
-        vk::Device device,
-        uint32_t queueFamily
-    );
 };

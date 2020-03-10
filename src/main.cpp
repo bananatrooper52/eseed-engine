@@ -21,6 +21,18 @@ int main() {
     );
 
     RenderContext renderContext(window);
+    auto pipeline = renderContext.getRenderPipeline();
+
+    auto objectId = pipeline->addRenderObject(Mesh({
+        {{ -1, -1 }, { 1, 0, 0 }},
+        {{ 1, -1 }, { 0, 1, 0 }},
+        {{ -1, 1 }, { 0, 0, 1 }},
+        {{ -1, 1 }, { 0, 0, 1 }},
+        {{ 1, -1 }, { 0, 1, 0 }},
+        {{ 1, 1 }, { 1, 0, 1 }},
+    }));
+
+    auto instanceId = pipeline->addRenderInstance(objectId);
 
     // Poll window updates and redraw until close is requested
     while (!window->isCloseRequested()) {
@@ -30,4 +42,7 @@ int main() {
 
         window->update();
     }
+
+    pipeline->removeRenderInstance(instanceId);
+    pipeline->removeRenderObject(objectId);
 }

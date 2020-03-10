@@ -8,12 +8,14 @@
 
 class ResourceManager {
 public:
+    ResourceManager(const ResourceManager&) = delete;
     ResourceManager(
         const std::vector<const char*>& instanceExtensionNames,
         const std::vector<const char*>& instanceLayerNames,
         const std::vector<const char*>& deviceExtensionNames,
         std::shared_ptr<esd::window::Window> window
     );
+    ~ResourceManager();
 
     std::optional<vk::SurfaceCapabilitiesKHR> getSurfaceCapabilities();
     std::optional<std::vector<vk::SurfaceFormatKHR>> getSurfaceFormats();

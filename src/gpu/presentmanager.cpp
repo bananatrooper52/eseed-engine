@@ -1,11 +1,19 @@
 #include "presentmanager.hpp"
 
 PresentManager::PresentManager(
-    std::shared_ptr<ResourceManager> rm
-) : rm(rm) {
+    std::shared_ptr<ResourceManager> rm,
+    std::shared_ptr<esd::window::Window> window
+) : rm(rm), window(window) {
     findSwapchainFormat();
     createSwapchain();
     createSwapchainImageViews();
+}
+
+PresentManager::~PresentManager() {
+    rm->getDevice().destroySwapchainKHR(swapchain);
+    for (const auto& imageView : swapchainImageViews) {
+        rm->getDevice().destroyImageView(imageView);
+    }
 }
 
 uint32_t PresentManager::getNextImageIndex(vk::Semaphore semaphore) {
@@ -21,13 +29,22 @@ vk::ImageView PresentManager::getImageView(uint32_t index) {
     return swapchainImageViews.at((size_t)index);
 }
 
+uint32_t PresentManager::getImageCount() {
+    return (uint32_t)swapchainImageViews.size();
+}
+
 vk::SwapchainKHR PresentManager::getSwapchain() {
     return swapchain;
 }
 
+esd::math::Vec2<U32> PresentManager::getSize() {
+    if (!window) throw std::runtime_error("No window");
+    return esd::math::Vec2<U32>(window->getSize());
+}
+
 void PresentManager::findSwapchainFormat() {
-    vk::SurfaceFormatKHR swapchainFormat;
-    for (auto format : *rm->getSurfaceFormats()) {
+    auto formats = *rm->getSurfaceFormats();
+    for (auto format : formats) {
         // TODO: actually search lol
         swapchainFormat = format;
         break;
@@ -40,8 +57,9 @@ void PresentManager::createSwapchain() {
     swapchain = rm->getDevice().createSwapchainKHR(vk::SwapchainCreateInfoKHR()
         .setSurface(*rm->getSurface())
         .setMinImageCount(surfaceCapabilities.minImageCount)
-        .setImageExtent(surfaceCapabilities.maxImageExtent)
+        .setImageExtent(surfaceCapabilities.currentExtent)
         .setImageFormat(swapchainFormat.format)
+        .setImageColorSpace(swapchainFormat.colorSpace)
         .setPreTransform(surfaceCapabilities.currentTransform)
         .setPresentMode(vk::PresentModeKHR::eFifo)
         .setImageSharingMode(vk::SharingMode::eExclusive)

@@ -32,23 +32,34 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
         window
     );
 
-    createCommandPool(rm->getDevice(), *rm->getGraphicsQueueFamily());
+    pm = std::make_shared<PresentManager>(rm, window);
+
+    graphicsQueue = rm->getDevice().getQueue(*rm->getGraphicsQueueFamily(), 0);
 
     imageAvailableSemaphore = rm->getDevice().createSemaphore({});
     renderFinishedSemaphore = rm->getDevice().createSemaphore({});
 
-    /* renderPipeline->registerMeshBuffer(createMeshBuffer(Mesh({
-        {{ -1, -1 }, { 1, 0, 0 }},
-        {{ 1, -1 }, { 0, 1, 0 }},
-        {{ -1, 1 }, { 0, 0, 1 }},
-        {{ -1, 1 }, { 0, 0, 1 }},
-        {{ 1, -1 }, { 0, 1, 0 }},
-        {{ 1, 1 }, { 1, 0, 1 }},
-    }))); */
+    auto vertModule = createShaderModule(
+        loadShaderCode("resources/shaders/test/test.vert.spv")
+    );
+
+    auto fragModule = createShaderModule(
+        loadShaderCode("resources/shaders/test/test.frag.spv")
+    );
+
+    pipeline = std::make_shared<RenderPipeline>(
+        rm,
+        pm,
+        vertModule,
+        fragModule
+    );
+
+    rm->getDevice().destroyShaderModule(vertModule);
+    rm->getDevice().destroyShaderModule(fragModule);
 }
 
 void RenderContext::render() {
-    /* uint32_t imageIndex = pm->getNextImageIndex(imageAvailableSemaphore);
+    uint32_t imageIndex = pm->getNextImageIndex(imageAvailableSemaphore);
 
     std::vector<vk::Semaphore> waitSemaphores = {
         imageAvailableSemaphore
@@ -66,7 +77,7 @@ void RenderContext::render() {
         .setSignalSemaphoreCount((uint32_t)signalSemaphores.size())
         .setPSignalSemaphores(signalSemaphores.data())
         .setCommandBufferCount(1)
-        .setPCommandBuffers(&renderPipeline->getCommandBuffer(imageIndex));        
+        .setPCommandBuffers(&pipeline->getCommandBuffer(imageIndex));        
 
     graphicsQueue.submit(1, &si, nullptr);
 
@@ -74,12 +85,21 @@ void RenderContext::render() {
         .setWaitSemaphoreCount((uint32_t)signalSemaphores.size())
         .setPWaitSemaphores(signalSemaphores.data())
         .setSwapchainCount(1)
-        .setPSwapchains(&presentManager->getSwapchain())
+        .setPSwapchains(&pm->getSwapchain())
         .setPImageIndices(&imageIndex);
 
     graphicsQueue.presentKHR(pi);
 
-    graphicsQueue.waitIdle(); */
+    graphicsQueue.waitIdle();
+}
+
+RenderContext::~RenderContext() {
+    rm->getDevice().destroySemaphore(imageAvailableSemaphore);
+    rm->getDevice().destroySemaphore(renderFinishedSemaphore);
+}
+
+std::shared_ptr<RenderPipeline> RenderContext::getRenderPipeline() {
+    return pipeline;
 }
 
 std::vector<uint8_t> RenderContext::loadShaderCode(std::string path) {
@@ -105,13 +125,4 @@ vk::ShaderModule RenderContext::createShaderModule(
         .setPCode((uint32_t*)code.data());
 
     return rm->getDevice().createShaderModule(shaderModuleCi);
-}
-
-void RenderContext::createCommandPool(
-    vk::Device device,
-    uint32_t queueFamily
-) {
-    commandPool = device.createCommandPool(vk::CommandPoolCreateInfo()
-        .setQueueFamilyIndex(queueFamily)
-    );
 }
