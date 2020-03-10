@@ -56,7 +56,7 @@ void PresentManager::createSwapchain() {
 
     swapchain = rm->getDevice().createSwapchainKHR(vk::SwapchainCreateInfoKHR()
         .setSurface(*rm->getSurface())
-        .setMinImageCount(surfaceCapabilities.minImageCount)
+        .setMinImageCount(surfaceCapabilities.minImageCount + 1)
         .setImageExtent(surfaceCapabilities.currentExtent)
         .setImageFormat(swapchainFormat.format)
         .setImageColorSpace(swapchainFormat.colorSpace)

@@ -62,9 +62,10 @@ WindowWin32::~WindowWin32() {
 
 void WindowWin32::poll() {
     MSG msg;
-    GetMessage(&msg, NULL, 0, 0);
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
+    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
 }
 
 bool WindowWin32::isCloseRequested() {

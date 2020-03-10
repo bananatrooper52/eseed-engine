@@ -54,8 +54,6 @@ RenderPipeline::RenderPipeline(
         .setPSetLayouts(&cameraSetLayout)
     );
 
-    rm->getDevice().destroyDescriptorSetLayout(cameraSetLayout);
-
     // -- PIPELINE -- //
 
     std::vector<vk::PipelineShaderStageCreateInfo> stages = {
@@ -179,11 +177,66 @@ RenderPipeline::RenderPipeline(
         );
     }
 
-    cameraMemoryContainer = createMemoryContainer({ sizeof(Camera) });
+    // -- UNIFORM BUFFERS -- //
 
+    cameraMemoryContainers.resize(framebuffers.size());
+    for (size_t i = 0; i < cameraMemoryContainers.size(); i++) {
+        cameraMemoryContainers[i] = createMemoryContainer({ 
+            { sizeof(Camera), vk::BufferUsageFlagBits::eUniformBuffer }
+        });
+    }
+
+    // -- DESCRIPTOR POOL -- //
+
+    auto descriptorPoolSize = vk::DescriptorPoolSize()
+        .setType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount((uint32_t)framebuffers.size());
+
+    descriptorPool = rm->getDevice().createDescriptorPool(
+        vk::DescriptorPoolCreateInfo()
+        .setPoolSizeCount(1)
+        .setPPoolSizes(&descriptorPoolSize)
+        .setMaxSets((uint32_t)framebuffers.size())
+    );
+
+    // -- DESCRIPTOR SETS AND LAYOUTS -- //
+
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(
+        framebuffers.size(),
+        cameraSetLayout
+    );
+
+    descriptorSets = rm->getDevice().allocateDescriptorSets(
+        vk::DescriptorSetAllocateInfo()
+        .setDescriptorPool(descriptorPool)
+        .setDescriptorSetCount((uint32_t)descriptorSetLayouts.size())
+        .setPSetLayouts(descriptorSetLayouts.data())
+    );
+
+    for (size_t i = 0; i < descriptorSets.size(); i++) {
+        auto bufferInfo = vk::DescriptorBufferInfo()
+            .setBuffer(cameraMemoryContainers[i].buffers[0])
+            .setOffset(0)
+            .setRange(VK_WHOLE_SIZE);
+
+        auto writeDescriptorSet = vk::WriteDescriptorSet()
+            .setDstSet(descriptorSets[i])
+            .setDstBinding(0)
+            .setDstArrayElement(0)
+            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+            .setDescriptorCount(1)
+            .setPBufferInfo(&bufferInfo);
+        
+        rm->getDevice().updateDescriptorSets({ writeDescriptorSet }, {});
+    }
+
+    rm->getDevice().destroyDescriptorSetLayout(cameraSetLayout);
 }
 
 RenderPipeline::~RenderPipeline() {
+    for (const auto& container : cameraMemoryContainers)
+        destroyMemoryContainer(container);
+    rm->getDevice().destroyDescriptorPool(descriptorPool);
     for (const auto& framebuffer : framebuffers)
         rm->getDevice().destroyFramebuffer(framebuffer);
     rm->getDevice().freeCommandBuffers(commandPool, commandBuffers);
@@ -197,7 +250,9 @@ RenderObject::Id RenderPipeline::addRenderObject(const Mesh& mesh) {
     size_t byteLength = mesh.vertices.size() * sizeof(mesh.vertices[0]);
 
     RenderObject object = {
-        createMemoryContainer({ byteLength }),
+        createMemoryContainer({ 
+            { byteLength, vk::BufferUsageFlagBits::eVertexBuffer }
+        }),
         (uint32_t)mesh.vertices.size()
     };
     
@@ -241,6 +296,15 @@ vk::CommandBuffer RenderPipeline::getCommandBuffer(uint32_t i) {
     return commandBuffers[i];
 }
 
+void RenderPipeline::update(uint32_t imageIndex) {
+    setBufferData(
+        cameraMemoryContainers[imageIndex], 
+        0, 
+        &camera, 
+        sizeof(camera)
+    );
+}
+
 void RenderPipeline::recordCommandBuffers() {
     for (uint32_t i = 0; i < commandBuffers.size(); i++) {
         vk::CommandBuffer& cmd = commandBuffers[i];
@@ -265,9 +329,10 @@ void RenderPipeline::recordCommandBuffers() {
         // Bind the pipeline
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-        // For each render instance, bind vertex buffer and draw
+        // For each render instance
         for (const auto& renderInstance : renderInstances) {
 
+            // Bind render object vertex buffer
             const auto& renderObject = 
                 renderObjects[renderInstance.second.objectId];
             
@@ -275,6 +340,15 @@ void RenderPipeline::recordCommandBuffers() {
                 0, 
                 { renderObject.memoryContainer.buffers[0] },
                 { 0 }
+            );
+
+            // Bind camera uniform buffer
+            cmd.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics,
+                layout,
+                0,
+                { descriptorSets[i] },
+                {}
             );
 
             cmd.draw(renderObject.vertexCount, 1, 0, 0);
@@ -289,7 +363,7 @@ void RenderPipeline::recordCommandBuffers() {
 }
 
 MemoryContainer RenderPipeline::createMemoryContainer(
-    std::vector<size_t> bufferSizes
+    std::vector<std::pair<size_t, vk::BufferUsageFlags>> bufferInfos
 ) {
     MemoryContainer container;
     
@@ -299,7 +373,7 @@ MemoryContainer RenderPipeline::createMemoryContainer(
 
     vk::DeviceSize totalMemorySize = 0;
 
-    container.buffers.resize(bufferSizes.size());
+    container.buffers.resize(bufferInfos.size());
     std::vector<vk::DeviceSize> bufferOffsets(container.buffers.size());
 
     uint32_t typeBits = 0;
@@ -310,8 +384,8 @@ MemoryContainer RenderPipeline::createMemoryContainer(
             .setQueueFamilyIndexCount(1)
             .setPQueueFamilyIndices(&queueFamily)
             .setSharingMode(vk::SharingMode::eExclusive)
-            .setSize(bufferSizes[i])
-            .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+            .setSize(bufferInfos[i].first)
+            .setUsage(bufferInfos[i].second)
         );
 
         auto memReqs = rm->getDevice().getBufferMemoryRequirements(
@@ -381,4 +455,8 @@ void RenderPipeline::setBufferData(
     );
     memcpy(mappedData, data, size);
     rm->getDevice().unmapMemory(container.memory);
+}
+
+void RenderPipeline::setCamera(const Camera& camera) {
+    this->camera = camera;
 }

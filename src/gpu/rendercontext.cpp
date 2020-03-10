@@ -36,8 +36,17 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
 
     graphicsQueue = rm->getDevice().getQueue(*rm->getGraphicsQueueFamily(), 0);
 
-    imageAvailableSemaphore = rm->getDevice().createSemaphore({});
-    renderFinishedSemaphore = rm->getDevice().createSemaphore({});
+    renderFinishedSemaphores.resize(maxFrameCount);
+    imageAvailableSemaphores.resize(maxFrameCount);
+    frameFences.resize(maxFrameCount);
+    for (size_t i = 0; i < maxFrameCount; i++) {
+        renderFinishedSemaphores[i] = rm->getDevice().createSemaphore({});
+        imageAvailableSemaphores[i] = rm->getDevice().createSemaphore({});
+        frameFences[i] = rm->getDevice().createFence(
+            vk::FenceCreateInfo()
+                .setFlags(vk::FenceCreateFlagBits::eSignaled)
+        );
+    }
 
     auto vertModule = createShaderModule(
         loadShaderCode("resources/shaders/test/test.vert.spv")
@@ -59,16 +68,28 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
 }
 
 void RenderContext::render() {
-    uint32_t imageIndex = pm->getNextImageIndex(imageAvailableSemaphore);
+    rm->getDevice().waitForFences(
+        { frameFences[currentFrame] }, 
+        true, 
+        UINT64_MAX
+    );
+
+    rm->getDevice().resetFences({ frameFences[currentFrame] });
+    
+    uint32_t imageIndex = pm->getNextImageIndex(
+        imageAvailableSemaphores[currentFrame]
+    );
+
+    pipeline->update(imageIndex);
 
     std::vector<vk::Semaphore> waitSemaphores = {
-        imageAvailableSemaphore
+        imageAvailableSemaphores[currentFrame]
     };
     std::vector<vk::PipelineStageFlags> waitStages = {
         vk::PipelineStageFlagBits::eTopOfPipe
     };
     std::vector<vk::Semaphore> signalSemaphores = {
-        renderFinishedSemaphore
+        renderFinishedSemaphores[currentFrame]
     };
     auto si = vk::SubmitInfo()
         .setWaitSemaphoreCount((uint32_t)waitSemaphores.size())
@@ -79,7 +100,7 @@ void RenderContext::render() {
         .setCommandBufferCount(1)
         .setPCommandBuffers(&pipeline->getCommandBuffer(imageIndex));        
 
-    graphicsQueue.submit(1, &si, nullptr);
+    graphicsQueue.submit({ si }, frameFences[currentFrame]);
 
     auto pi = vk::PresentInfoKHR()
         .setWaitSemaphoreCount((uint32_t)signalSemaphores.size())
@@ -90,16 +111,17 @@ void RenderContext::render() {
 
     graphicsQueue.presentKHR(pi);
 
-    graphicsQueue.waitIdle();
+    currentFrame++;
+    currentFrame %= maxFrameCount;
 }
 
 RenderContext::~RenderContext() {
-    rm->getDevice().destroySemaphore(imageAvailableSemaphore);
-    rm->getDevice().destroySemaphore(renderFinishedSemaphore);
-}
-
-std::shared_ptr<RenderPipeline> RenderContext::getRenderPipeline() {
-    return pipeline;
+    rm->getDevice().waitIdle();
+    for (size_t i = 0; i < maxFrameCount; i++) {
+        rm->getDevice().destroySemaphore(imageAvailableSemaphores[i]);
+        rm->getDevice().destroySemaphore(renderFinishedSemaphores[i]);
+        rm->getDevice().destroyFence(frameFences[i]);
+    }
 }
 
 std::vector<uint8_t> RenderContext::loadShaderCode(std::string path) {
@@ -125,4 +147,16 @@ vk::ShaderModule RenderContext::createShaderModule(
         .setPCode((uint32_t*)code.data());
 
     return rm->getDevice().createShaderModule(shaderModuleCi);
+}
+
+std::shared_ptr<RenderPipeline> RenderContext::getRenderPipeline() {
+    return pipeline;
+}
+
+std::shared_ptr<ResourceManager> RenderContext::getResourceManager() {
+    return rm;
+}
+
+std::shared_ptr<PresentManager> RenderContext::getPresentManager() {
+    return pm;
 }

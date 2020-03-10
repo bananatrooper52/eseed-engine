@@ -7,6 +7,12 @@
 #include <vulkan/vulkan.hpp>
 #include <map>
 
+#define ALIGN_SCALAR alignas(4)
+#define ALIGN_VEC2 alignas(8)
+#define ALIGN_VEC4 alignas(16)
+#define ALIGN_NESTED_STRUCT alignas(16)
+#define ALIGN_MAT4 alignas(ALIGN_VEC4)
+
 struct MemoryContainer {
     vk::DeviceMemory memory;
     std::vector<vk::Buffer> buffers;
@@ -26,7 +32,7 @@ struct RenderInstance {
 };
 
 struct Camera {
-    float x;
+    ALIGN_SCALAR float x;
 };
 
 class RenderPipeline {
@@ -47,11 +53,17 @@ public:
 
     vk::CommandBuffer getCommandBuffer(uint32_t i);
 
+    void setCamera(const Camera& camera);
+
+    void update(uint32_t imageIndex);
+
 private:
+    Camera camera;
+
     std::shared_ptr<ResourceManager> rm;
     std::shared_ptr<PresentManager> pm;
 
-    MemoryContainer cameraMemoryContainer;
+    std::vector<MemoryContainer> cameraMemoryContainers;
     std::map<RenderObject::Id, RenderObject> renderObjects;
     std::map<RenderInstance::Id, RenderInstance> renderInstances;
 
@@ -61,10 +73,14 @@ private:
     vk::CommandPool commandPool;
     std::vector<vk::CommandBuffer> commandBuffers;
     std::vector<vk::Framebuffer> framebuffers;
+    vk::DescriptorPool descriptorPool;
+    std::vector<vk::DescriptorSet> descriptorSets;
 
     void recordCommandBuffers();
 
-    MemoryContainer createMemoryContainer(std::vector<size_t> bufferSizes);
+    MemoryContainer createMemoryContainer(
+        std::vector<std::pair<size_t, vk::BufferUsageFlags>> bufferSizes
+    );
     void destroyMemoryContainer(const MemoryContainer& container);
     void setBufferData(
         const MemoryContainer& container, 
