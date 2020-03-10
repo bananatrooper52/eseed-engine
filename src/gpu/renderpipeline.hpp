@@ -7,12 +7,15 @@
 #include <vulkan/vulkan.hpp>
 #include <map>
 
+struct MemoryContainer {
+    vk::DeviceMemory memory;
+    std::vector<vk::Buffer> buffers;
+};
+
 struct RenderObject {
     using Id = size_t;
-    
-    vk::DeviceMemory memory;
-    vk::Buffer vertexBuffer;
 
+    MemoryContainer memoryContainer;
     uint32_t vertexCount;
 };
 
@@ -20,6 +23,10 @@ struct RenderInstance {
     using Id = size_t;
     
     RenderObject::Id objectId;
+};
+
+struct Camera {
+    float x;
 };
 
 class RenderPipeline {
@@ -44,6 +51,7 @@ private:
     std::shared_ptr<ResourceManager> rm;
     std::shared_ptr<PresentManager> pm;
 
+    MemoryContainer cameraMemoryContainer;
     std::map<RenderObject::Id, RenderObject> renderObjects;
     std::map<RenderInstance::Id, RenderInstance> renderInstances;
 
@@ -55,4 +63,13 @@ private:
     std::vector<vk::Framebuffer> framebuffers;
 
     void recordCommandBuffers();
+
+    MemoryContainer createMemoryContainer(std::vector<size_t> bufferSizes);
+    void destroyMemoryContainer(const MemoryContainer& container);
+    void setBufferData(
+        const MemoryContainer& container, 
+        size_t bufferIndex, 
+        const void* data,
+        size_t size
+    );
 };

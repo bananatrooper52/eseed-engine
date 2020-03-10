@@ -37,9 +37,24 @@ RenderPipeline::RenderPipeline(
 
     // -- LAYOUT -- //
 
-    layout = rm->getDevice().createPipelineLayout(vk::PipelineLayoutCreateInfo()
-        
+    auto cameraSetLayoutBinding = vk::DescriptorSetLayoutBinding()
+        .setBinding(0)
+        .setDescriptorCount(1)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+    auto cameraSetLayout = rm->getDevice().createDescriptorSetLayout(
+        vk::DescriptorSetLayoutCreateInfo()
+        .setBindingCount(1)
+        .setPBindings(&cameraSetLayoutBinding)
     );
+
+    layout = rm->getDevice().createPipelineLayout(vk::PipelineLayoutCreateInfo()
+        .setSetLayoutCount(1)
+        .setPSetLayouts(&cameraSetLayout)
+    );
+
+    rm->getDevice().destroyDescriptorSetLayout(cameraSetLayout);
 
     // -- PIPELINE -- //
 
@@ -163,6 +178,9 @@ RenderPipeline::RenderPipeline(
             .setLayers(1)
         );
     }
+
+    cameraMemoryContainer = createMemoryContainer({ sizeof(Camera) });
+
 }
 
 RenderPipeline::~RenderPipeline() {
@@ -176,49 +194,16 @@ RenderPipeline::~RenderPipeline() {
 }
 
 RenderObject::Id RenderPipeline::addRenderObject(const Mesh& mesh) {
-    RenderObject object;
+    size_t byteLength = mesh.vertices.size() * sizeof(mesh.vertices[0]);
 
-    vk::DeviceSize byteLength = sizeof(mesh.vertices[0]) * mesh.vertices.size();
+    RenderObject object = {
+        createMemoryContainer({ byteLength }),
+        (uint32_t)mesh.vertices.size()
+    };
     
     object.vertexCount = (uint32_t)mesh.vertices.size();
 
-    auto queueFamily = *rm->getGraphicsQueueFamily();
-    object.vertexBuffer = rm->getDevice().createBuffer(vk::BufferCreateInfo()
-        .setQueueFamilyIndexCount(1)
-        .setPQueueFamilyIndices(&queueFamily)
-        .setSharingMode(vk::SharingMode::eExclusive)
-        .setSize(byteLength)
-        .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
-    );
-    
-    // Find memory type index
-    auto memoryProperties = rm->getPhysicalDevice().getMemoryProperties();
-    auto memoryRequirements = 
-        rm->getDevice().getBufferMemoryRequirements(object.vertexBuffer);
-    auto properties = 
-        vk::MemoryPropertyFlagBits::eHostVisible |
-        vk::MemoryPropertyFlagBits::eHostCoherent;
-
-    std::optional<uint32_t> memoryTypeIndex;
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-        if ((memoryRequirements.memoryTypeBits & (1 << i)) && 
-            ((memoryProperties.memoryTypes[i].propertyFlags & properties) 
-            == properties))
-            memoryTypeIndex = i;
-    }
-    if (!memoryTypeIndex) 
-        throw std::runtime_error("Could not find suitable memory type index");
-
-    object.memory = rm->getDevice().allocateMemory(vk::MemoryAllocateInfo()
-        .setAllocationSize(memoryRequirements.size)
-        .setMemoryTypeIndex(*memoryTypeIndex)
-    );
-
-    rm->getDevice().bindBufferMemory(object.vertexBuffer, object.memory, 0);
-
-    void* data = rm->getDevice().mapMemory(object.memory, 0, byteLength);
-    memcpy(data, mesh.vertices.data(), byteLength);
-    rm->getDevice().unmapMemory(object.memory);
+    setBufferData(object.memoryContainer, 0, mesh.vertices.data(), byteLength);
 
     RenderObject::Id id = 0;
     while (renderObjects.count(id)) id++;
@@ -230,8 +215,7 @@ RenderObject::Id RenderPipeline::addRenderObject(const Mesh& mesh) {
 void RenderPipeline::removeRenderObject(RenderObject::Id id) {
     auto object = renderObjects[id];
 
-    rm->getDevice().freeMemory(object.memory);
-    rm->getDevice().destroyBuffer(object.vertexBuffer);
+    destroyMemoryContainer(renderObjects[id].memoryContainer);
     
     renderObjects.erase(id);
 }
@@ -289,7 +273,7 @@ void RenderPipeline::recordCommandBuffers() {
             
             cmd.bindVertexBuffers(
                 0, 
-                { renderObject.vertexBuffer },
+                { renderObject.memoryContainer.buffers[0] },
                 { 0 }
             );
 
@@ -302,4 +286,99 @@ void RenderPipeline::recordCommandBuffers() {
         // End recording
         cmd.end();
     }
+}
+
+MemoryContainer RenderPipeline::createMemoryContainer(
+    std::vector<size_t> bufferSizes
+) {
+    MemoryContainer container;
+    
+    auto queueFamily = *rm->getGraphicsQueueFamily();
+
+    // Create buffers and find offsets
+
+    vk::DeviceSize totalMemorySize = 0;
+
+    container.buffers.resize(bufferSizes.size());
+    std::vector<vk::DeviceSize> bufferOffsets(container.buffers.size());
+
+    uint32_t typeBits = 0;
+    
+    for (size_t i = 0; i < container.buffers.size(); i++) {
+        container.buffers[i] = rm->getDevice().createBuffer(
+            vk::BufferCreateInfo()
+            .setQueueFamilyIndexCount(1)
+            .setPQueueFamilyIndices(&queueFamily)
+            .setSharingMode(vk::SharingMode::eExclusive)
+            .setSize(bufferSizes[i])
+            .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+        );
+
+        auto memReqs = rm->getDevice().getBufferMemoryRequirements(
+            container.buffers[i]
+        );
+
+        bufferOffsets[i] = totalMemorySize;
+        
+        typeBits |= memReqs.memoryTypeBits;
+
+        totalMemorySize += memReqs.size;
+    }
+    
+    // Find memory type index
+    auto memProps = rm->getPhysicalDevice().getMemoryProperties();
+    auto properties = 
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent;
+
+    uint32_t memoryTypeIndex = 0;
+    for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
+        bool hasAllTypeBits = (typeBits & (1 << i));
+        bool hasAllProperties = 
+            (memProps.memoryTypes[i].propertyFlags & properties) == properties;
+            
+        if (hasAllTypeBits && hasAllProperties) {
+            memoryTypeIndex = i;
+            break;
+        }
+    }
+
+    // Allocate memory
+    container.memory = rm->getDevice().allocateMemory(vk::MemoryAllocateInfo()
+        .setAllocationSize(totalMemorySize)
+        .setMemoryTypeIndex(memoryTypeIndex)
+    );
+
+    // Bind buffers to memory
+    for (size_t i = 0; i < container.buffers.size(); i++) {
+        rm->getDevice().bindBufferMemory(
+            container.buffers[i],
+            container.memory,
+            bufferOffsets[i]
+        );
+    }
+
+    return container;
+}
+
+void RenderPipeline::destroyMemoryContainer(const MemoryContainer& container) {
+    for (const auto& buffer : container.buffers)
+        rm->getDevice().destroyBuffer(buffer);
+
+    rm->getDevice().freeMemory(container.memory);
+}
+
+void RenderPipeline::setBufferData(
+    const MemoryContainer& container,
+    size_t bufferIndex,
+    const void* data,
+    size_t size
+) {
+    void* mappedData = rm->getDevice().mapMemory(
+        container.memory, 
+        0, 
+        size
+    );
+    memcpy(mappedData, data, size);
+    rm->getDevice().unmapMemory(container.memory);
 }
