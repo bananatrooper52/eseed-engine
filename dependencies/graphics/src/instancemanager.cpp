@@ -4,7 +4,7 @@
 #include <eseed/logging/logger.hpp>
 
 using namespace esd::graphics;
-using namespace esd::logging;
+using namespace esdl;
 
 InstanceManager::InstanceManager(vk::Instance instance) : instance(instance) {}
 

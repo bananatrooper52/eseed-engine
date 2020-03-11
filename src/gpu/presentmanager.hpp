@@ -10,7 +10,7 @@ public:
     PresentManager(const PresentManager&) = delete;
     PresentManager(
         std::shared_ptr<ResourceManager> rm,
-        std::shared_ptr<esd::window::Window> window
+        std::shared_ptr<esdw::Window> window
     );
     ~PresentManager();
 
@@ -20,12 +20,12 @@ public:
 
     vk::SwapchainKHR getSwapchain();
 
-    esd::math::Vec2<U32> getSize();
+    esdm::Vec2<U32> getSize();
 
 private:
     std::shared_ptr<ResourceManager> rm;
 
-    std::shared_ptr<esd::window::Window> window;
+    std::shared_ptr<esdw::Window> window;
 
     vk::SurfaceFormatKHR swapchainFormat;
     vk::SwapchainKHR swapchain;

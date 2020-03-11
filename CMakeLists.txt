@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(eseed_engine)
 
 set(CMAKE_CXX_STANDARD 17)
+add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
 
 find_package(Vulkan REQUIRED)
 

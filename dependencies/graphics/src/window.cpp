@@ -3,7 +3,7 @@
 #include <eseed/graphics/window/windowwin32.hpp>
 
 std::unique_ptr<esd::graphics::Window> esd::graphics::createWindow(
-    esd::math::Vec2<I32> size, 
+    esdm::Vec2<I32> size, 
     std::string title
 ) {
 #if defined(_WIN32)

@@ -5,13 +5,14 @@
 #include "mesh.hpp"
 
 #include <vulkan/vulkan.hpp>
+#include <eseed/math/mat.hpp>
 #include <map>
 
-#define ALIGN_SCALAR alignas(4)
-#define ALIGN_VEC2 alignas(8)
-#define ALIGN_VEC4 alignas(16)
-#define ALIGN_NESTED_STRUCT alignas(16)
-#define ALIGN_MAT4 alignas(ALIGN_VEC4)
+#define ALIGN_SCLR(type) alignas(sizeof(type))
+#define ALIGN_VEC2(type) alignas(2 * sizeof(type))
+#define ALIGN_VEC4(type) alignas(4 * sizeof(type))
+#define ALIGN_MAT4(type) ALIGN_VEC4(type)
+#define ALIGN_STRUCT alignas(16)
 
 struct MemoryContainer {
     vk::DeviceMemory memory;
@@ -32,7 +33,9 @@ struct RenderInstance {
 };
 
 struct Camera {
-    ALIGN_SCALAR float x;
+    ALIGN_VEC4(float) esdm::Vec3<float> position;
+    ALIGN_MAT4(float) esdm::Mat4<float> rotation;
+    ALIGN_SCLR(float) float aspect;
 };
 
 class RenderPipeline {

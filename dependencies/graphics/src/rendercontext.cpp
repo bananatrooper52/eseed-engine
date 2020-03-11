@@ -1,8 +1,8 @@
 #include <eseed/graphics/rendering/rendercontext.hpp>
 
 using namespace esd::graphics;
-using namespace esd::logging;
-using namespace esd::math;
+using namespace esdl;
+using namespace esdm;
 
 RenderContext::RenderContext(std::shared_ptr<Window> window, bool debugEnabled) 
 : window(window), debugEnabled(debugEnabled) {}

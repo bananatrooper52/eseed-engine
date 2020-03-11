@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
+RenderContext::RenderContext(std::shared_ptr<esdw::Window> window) {
 
     std::vector<const char*> instanceExtensions;
     std::vector<const char*> instanceLayers;
@@ -65,6 +65,11 @@ RenderContext::RenderContext(std::shared_ptr<esd::window::Window> window) {
 
     rm->getDevice().destroyShaderModule(vertModule);
     rm->getDevice().destroyShaderModule(fragModule);
+}
+
+bool RenderContext::checkFrameAvailable() {
+    return rm->getDevice().getFenceStatus(frameFences[currentFrame]) == 
+        vk::Result::eSuccess;
 }
 
 void RenderContext::render() {

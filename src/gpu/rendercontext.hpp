@@ -13,9 +13,10 @@
 
 class RenderContext {
 public:
-    RenderContext(std::shared_ptr<esd::window::Window> window = nullptr);
+    RenderContext(std::shared_ptr<esdw::Window> window = nullptr);
     ~RenderContext();
 
+    bool checkFrameAvailable();
     void render();
 
     std::vector<uint8_t> loadShaderCode(std::string path);

@@ -9,8 +9,8 @@
 #include <fstream>
 
 using namespace esd::graphics;
-using namespace esd::logging;
-using namespace esd::math;
+using namespace esdl;
+using namespace esdm;
 
 RenderContext::RenderContext(
 	std::shared_ptr<Window> window, bool debug, Logger logger)

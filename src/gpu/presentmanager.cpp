@@ -2,7 +2,7 @@
 
 PresentManager::PresentManager(
     std::shared_ptr<ResourceManager> rm,
-    std::shared_ptr<esd::window::Window> window
+    std::shared_ptr<esdw::Window> window
 ) : rm(rm), window(window) {
     findSwapchainFormat();
     createSwapchain();
@@ -37,9 +37,9 @@ vk::SwapchainKHR PresentManager::getSwapchain() {
     return swapchain;
 }
 
-esd::math::Vec2<U32> PresentManager::getSize() {
+esdm::Vec2<U32> PresentManager::getSize() {
     if (!window) throw std::runtime_error("No window");
-    return esd::math::Vec2<U32>(window->getSize());
+    return esdm::Vec2<U32>(window->getSize());
 }
 
 void PresentManager::findSwapchainFormat() {

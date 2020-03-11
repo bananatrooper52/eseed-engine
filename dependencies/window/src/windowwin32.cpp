@@ -4,9 +4,9 @@
 
 #include <eseed/logging/logger.hpp>
 
-using namespace esd::window;
-using namespace esd::logging;
-using namespace esd::math;
+using namespace esdw;
+using namespace esdl;
+using namespace esdm;
 
 WindowWin32::WindowWin32(Vec2<I32> size, std::string title) {
     mainLogger.debug("Creating window \"{}\"", title);

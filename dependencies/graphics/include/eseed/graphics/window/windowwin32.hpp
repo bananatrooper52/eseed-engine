@@ -12,7 +12,7 @@ namespace esd::graphics {
 
 class WindowWin32 : public Window {
 public:
-    WindowWin32(esd::math::Vec2<I32> size, std::string title);
+    WindowWin32(esdm::Vec2<I32> size, std::string title);
 
     ~WindowWin32();
     
@@ -26,7 +26,7 @@ public:
 
     vk::SurfaceKHR createSurface(vk::Instance instance) override;
 
-    esd::math::Vec2<I32> getSize() override;
+    esdm::Vec2<I32> getSize() override;
 
 private:
     HINSTANCE hInstance;

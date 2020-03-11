@@ -12,7 +12,7 @@ public:
 	RenderContext(
 		std::shared_ptr<esd::graphics::Window> window,
 		bool debug,
-		esd::logging::Logger logger);
+		esdl::Logger logger);
 	void render();
 
 private:
@@ -31,7 +31,7 @@ private:
 
 	std::shared_ptr<esd::graphics::Window> window;
 	bool debug;
-	esd::logging::Logger logger;
+	esdl::Logger logger;
 	std::vector<vk::Image> swapchainImages;
 	std::vector<vk::ImageView> swapchainImageViews;
 	std::vector<vk::Framebuffer> swapchainFramebuffers;

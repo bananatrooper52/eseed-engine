@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace esd::logging {
+namespace esdl {
 
 template <typename... Ts>
 std::string format(const std::string& format, const Ts&... args);

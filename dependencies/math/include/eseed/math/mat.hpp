@@ -6,7 +6,7 @@
 #include <iostream>
 #include <array>
 
-namespace esd::math {
+namespace esdm {
 
 template <size_t M, size_t N, typename T>
 class MatData
@@ -145,45 +145,6 @@ public:
     Mat inverse() const {
         Mat<M, N, T> out = *this;
         for (size_t i = 0; i <)
-    }
-
-    template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> translate(const Vec3<T1> &translation) const {
-        Mat4<T> out = *this;
-        out[0][3] = translation.x;
-        out[1][3] = translation.y;
-        out[2][3] = translation.z;
-        return out;
-    }
-
-    template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateX(const T1 &xAngle) const {
-        Mat4<T> out = *this;
-        out[1][1] = cos(xAngle);
-        out[1][2] = -sin(xAngle);
-        out[2][1] = sin(xAngle);
-        out[2][2] = cos(xAngle);
-        return out;
-    }
-
-    template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateY(const T1 &yAngle) const {
-        Mat4<T> out = *this;
-        out[0][0] = cos(yAngle);
-        out[0][2] = sin(yAngle);
-        out[2][0] = -sin(yAngle);
-        out[2][2] = cos(yAngle);
-        return out;
-    }
-
-    template <typename T1, typename = std::enable_if_t<M == 4 && N == 4>>
-    Mat4<T> rotateZ(const T1 &zAngle) const {
-        Mat4<T> out = *this;
-        out[0][0] = cos(zAngle);
-        out[0][1] = -sin(zAngle);
-        out[1][0] = sin(zAngle);
-        out[1][1] = cos(zAngle);
-        return out;
     }
 
     friend std::ostream &operator<<(std::ostream &out, const Mat &m)     {

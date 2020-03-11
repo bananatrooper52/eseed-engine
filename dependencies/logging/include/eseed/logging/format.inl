@@ -5,23 +5,23 @@
 #include <sstream>
 
 template <typename... Ts>
-std::string esd::logging::format(const std::string& format, const Ts&... args) {
-    return esd::logging::format(0, format, args...);
+std::string esdl::format(const std::string& format, const Ts&... args) {
+    return esdl::format(0, format, args...);
 }
 
 template <typename T, typename... Ts>
-std::string esd::logging::format(
+std::string esdl::format(
     size_t argIndex, 
     const std::string& format, 
     const T& arg, 
     const Ts&... args
 ) {
-    std::string f = esd::logging::format(argIndex, format, arg);
-    return esd::logging::format(argIndex + 1, f, args...);
+    std::string f = esdl::format(argIndex, format, arg);
+    return esdl::format(argIndex + 1, f, args...);
 }
 
 template <typename T>
-std::string esd::logging::format(
+std::string esdl::format(
     size_t argIndex, 
     const std::string& format, 
     const T& arg

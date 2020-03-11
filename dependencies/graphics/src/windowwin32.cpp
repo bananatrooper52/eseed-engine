@@ -5,10 +5,10 @@
 #include <eseed/logging/logger.hpp>
 
 using namespace esd::graphics;
-using namespace esd::logging;
-using namespace esd::math;
+using namespace esdl;
+using namespace esdm;
 
-WindowWin32::WindowWin32(esd::math::Vec2<I32> size, std::string title) {
+WindowWin32::WindowWin32(esdm::Vec2<I32> size, std::string title) {
     mainLogger.debug("Creating window \"{}\"", title);
     
     HINSTANCE hInstance = GetModuleHandleW(NULL);

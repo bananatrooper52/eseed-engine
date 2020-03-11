@@ -1,6 +1,6 @@
 #include <eseed/logging/logger.hpp>
 
-using namespace esd::logging;
+using namespace esdl;
 
 Logger::Logger() {
     outputs.push_back(&std::cout);

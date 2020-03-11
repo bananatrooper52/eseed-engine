@@ -9,7 +9,7 @@
 #include <array>
 #include <algorithm>
 
-namespace esd::math {
+namespace esdm {
 
 template <size_t L, typename T>
 class VecData {

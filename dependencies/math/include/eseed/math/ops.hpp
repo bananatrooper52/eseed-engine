@@ -3,30 +3,30 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace esd::math {
+namespace esdm {
 
 template <typename T>
-inline T abs(const T &n) {
+inline T abs(T n) {
     return n < 0 ? -n : n;
 }
 
 template <typename T>
-inline T trunc(const T &n) {
+inline T trunc(T n) {
     return std::trunc(n);
 }
 
 template <typename T>
-inline T floor(const T &n) {
+inline T floor(T n) {
     return std::floor(n);
 }
 
 template <typename T>
-inline T ceil(const T &n) {
+inline T ceil(T n) {
     return std::ceil(n);
 }
 
 template <typename T>
-inline T round(const T &n) {
+inline T round(T n) {
     return std::round(n);
 }
 
@@ -36,26 +36,56 @@ inline T round(const T &n) {
 // Warning: NaN becomes 0, Inifinity becomes 1, -Infinity becomes -1
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I itrunc(const T &n) {
+inline I itrunc(T n) {
     return (I)n;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I ifloor(const T &n) {
+inline I ifloor(T n) {
     I ni = (I)n;
     return n < ni ? ni - 1 : ni;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I iceil(const T &n) {
+inline I iceil(T n) {
     I ni = (I)n;
     return n > ni ? ni + 1 : ni;
 }
 
 template <typename I, typename T, typename = std::enable_if_t<std::is_integral_v<I>>>
-inline I iround(const T &n) {
+inline I iround(T n) {
     I ni = (I)n;
     return n > 0 ? (n - ni >= 0.5 ? ni + 1 : ni) : (n - ni <= -0.5 ? ni - 1 : ni);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T sin(T n) {
+    return std::sin(n);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T cos(T n) {
+    return std::cos(n);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T tan(T n) {
+    return std::tan(n);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T asin(T n) {
+    return std::asin(n);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T acos(T n) {
+    return std::acos(n);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+inline T atan(T n) {
+    return std::atan(n);
 }
 
 }

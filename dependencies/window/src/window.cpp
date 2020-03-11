@@ -2,10 +2,10 @@
 
 #include <eseed/window/windowwin32.hpp>
 
-using namespace esd::window;
+using namespace esdw;
 
-std::unique_ptr<Window> esd::window::createWindow(
-    esd::math::Vec2<I32> size, 
+std::unique_ptr<Window> esdw::createWindow(
+    esdm::Vec2<I32> size, 
     std::string title
 ) {
 #if defined(_WIN32)

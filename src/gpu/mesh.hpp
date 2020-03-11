@@ -4,8 +4,8 @@
 #include <vector>
 
 struct Vertex {
-    esd::math::Vec2<float> position;
-    esd::math::Vec3<float> color;
+    esdm::Vec2<float> position;
+    esdm::Vec3<float> color;
 };
 
 struct Mesh {

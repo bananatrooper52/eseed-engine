@@ -8,7 +8,7 @@
 #include <eseed/math/vec.hpp>
 #include <eseed/logging/logger.hpp>
 
-namespace esd::window {
+namespace esdw {
 
 class Window {
 public:
@@ -28,12 +28,12 @@ public:
     virtual vk::SurfaceKHR createSurface(vk::Instance instance) = 0;
 
     // Get dimensions of the window in pixels
-    virtual esd::math::Vec2<I32> getSize() = 0;
+    virtual esdm::Vec2<I32> getSize() = 0;
 };
 
 // Platform-agnostic function to create a window for the native platform
 std::unique_ptr<Window> createWindow(
-    esd::math::Vec2<I32> size, 
+    esdm::Vec2<I32> size, 
     std::string title
 );
 

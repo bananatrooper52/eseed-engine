@@ -7,7 +7,7 @@
 #include <memory>
 #include <eseed/logging/format.hpp>
 
-namespace esd::logging {
+namespace esdl {
 
 class Logger {
 public:
@@ -97,7 +97,7 @@ private:
         const std::string& format, 
         const Ts&... args
     ) const {
-        std::string line = esd::logging::format(format, args...);
+        std::string line = esdl::format(format, args...);
         if (isLevelEnabled(level)) println(getLogLevelString(level), line);
         return line;
     }

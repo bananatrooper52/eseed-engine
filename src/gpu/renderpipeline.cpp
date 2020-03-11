@@ -41,7 +41,7 @@ RenderPipeline::RenderPipeline(
         .setBinding(0)
         .setDescriptorCount(1)
         .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+        .setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
     auto cameraSetLayout = rm->getDevice().createDescriptorSetLayout(
         vk::DescriptorSetLayoutCreateInfo()
