@@ -65,8 +65,8 @@ int main() {
             window->poll();
 
             pipeline->setCamera(Camera{ 
-                esdm::Vec3<float>(0, 0, 0),
-                esdm::rotateY(sin(t)),
+                esdm::Vec3<float>(0, 0, t * 16.f),
+                esdm::rotateX(0.5f) * esdm::rotateY(1.f),
                 float(window->getSize().x) / float(window->getSize().y)
             });
             renderContext.render();
