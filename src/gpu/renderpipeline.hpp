@@ -36,6 +36,7 @@ struct Camera {
     ALIGN_VEC4(float) esdm::Vec3<float> position;
     ALIGN_MAT4(float) esdm::Mat4<float> rotation;
     ALIGN_SCLR(float) float aspect;
+    ALIGN_SCLR(float) float fov;
 };
 
 class RenderPipeline {
@@ -75,6 +76,8 @@ private:
     vk::PipelineLayout layout;
     vk::CommandPool commandPool;
     std::vector<vk::CommandBuffer> commandBuffers;
+    std::vector<vk::Image> renderImages;
+    std::vector<vk::ImageView> renderImageViews;
     std::vector<vk::Framebuffer> framebuffers;
     vk::DescriptorPool descriptorPool;
     std::vector<vk::DescriptorSet> descriptorSets;

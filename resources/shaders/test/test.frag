@@ -17,7 +17,8 @@ struct Ray {
 
 struct RayHit {
     vec4 color;
-    vec3 pos;
+    vec3 normal;
+    float dist;
 };
 
 layout (set = 0, binding = 0) uniform Camera {
@@ -34,7 +35,7 @@ layout (location = 0) out vec4 fragColor;
 Sphere sphere = Sphere(
     vec4(1, 0, 1, 1),
     vec3(0, 0, -4),
-    1
+    100
 );
 
 //	Simplex 3D Noise 
@@ -111,9 +112,13 @@ float simplex(vec3 v){
 }
 
 vec4 getVoxel(ivec3 pos) {
-    if (pos.y - 32 > simplex(vec3(pos.xz / 64.f, 0)) * 16.f + 16.f) {
-        return vec4((sin(vec3(pos.x, 0, pos.z) / 32) * 0.5 + 0.5) * pos.y / 64.f, 1);
-    } else return vec4(0);
+    float groundHeight = simplex(vec3(pos.xz / 64.0, 0)) * 16.0 + simplex(vec3(pos.xz / 32.0, 1)) * 8.0;
+    if (pos.y < groundHeight) {
+        if (pos.y >= groundHeight - 1) return vec4(vec3(0.2, 0.87, 0.05), 1.0);
+        return vec4(vec3(0.5, 0.33, 0.25), 1.0); // Dirt  
+    }/*  else if (cloud > 0.5) {
+        return vec4(0.5, 0.5, 0.5, 0.025);
+    }  */else return vec4(0);
 }
 
 bool raySphere(Ray ray, Sphere sphere, out RayHit rayHit) {
@@ -130,11 +135,11 @@ bool raySphere(Ray ray, Sphere sphere, out RayHit rayHit) {
     float t0 = tca - thc;
     float t1 = tca + thc;
 
-    if (t0 > t1) rayHit.pos = ray.o + ray.d * t0;
-    else rayHit.pos = ray.o + ray.d * t1;
+    if (t0 > t1) rayHit.dist = t0;
+    else rayHit.dist = t1;
 
     rayHit.color = sphere.color;
-    rayHit.color.rgb = clamp(rayHit.color.rgb * 0.5 * abs(t0 - t1), vec3(0), vec3(1));
+    rayHit.normal = normalize((ray.o + ray.d * rayHit.dist) - sphere.c);
 
     return true;
 }
@@ -143,59 +148,72 @@ bool rayVoxel(Ray ray, out RayHit rayHit) {
     
     bool hit = false;
     
-    vec3 inc = sign(ray.d);
-    vec3 delta = 1.f / abs(ray.d);
-    vec3 currDelta = delta;
-
-    vec3 pos = vec3(ray.o);
-    if (delta.x < 0) pos.x++;
-    if (delta.y < 0) pos.y++;
-    if (delta.z < 0) pos.z++;
+    ivec3 pos = ivec3(floor(ray.o));
+    ivec3 inc = ivec3(sign(ray.d));
+    vec3 tDelta = 1.0 / abs(ray.d);
+    vec3 tMax = (pos - ray.o - min(-inc, 0)) / ray.d;
 
     rayHit.color = vec4(0, 0, 0, 1);
+    
+    float dist = 0;
+    vec3 normal;
 
     for (uint i = 0; i < MAX_VOXEL_TRAVERSAL; i++) {
         // X is next
-        if (currDelta.x < currDelta.y && currDelta.x < currDelta.z) {
+        if (tMax.x < tMax.y && tMax.x < tMax.z) {
             pos.x += inc.x;
-            currDelta.x += delta.x;
+            dist = tMax.x;
+            normal = vec3(inc.x, 0, 0);
+            tMax.x += tDelta.x;
         }
 
         // Y is next
-        else if (currDelta.y < currDelta.x && currDelta.y < currDelta.z) {
+        else if (tMax.y < tMax.x && tMax.y < tMax.z) {
             pos.y += inc.y;
-            currDelta.y += delta.y;
+            dist = tMax.y;
+            normal = vec3(0, inc.y, 0);
+            tMax.y += tDelta.y;
         }
 
         // Z is next
-        else if (currDelta.z < currDelta.x && currDelta.z < currDelta.y) {
+        else if (tMax.z < tMax.x && tMax.z < tMax.y) {
             pos.z += inc.z;
-            currDelta.z += delta.z;
+            dist = tMax.z;
+            normal = vec3(0, 0, inc.z);
+            tMax.z += tDelta.z;
         }
 
-        vec4 voxel = getVoxel(ivec3(pos));
+        vec4 voxel = getVoxel(pos);
 
-        if (voxel.a > 0) {
+        if (voxel.a > 0.01) {
             if (!hit) {
-                rayHit.pos = pos;
+                rayHit.dist = dist;
+                rayHit.normal = normal;
                 hit = true;
             }
 
             rayHit.color.rgb += rayHit.color.a * voxel.rgb * voxel.a;
-            rayHit.color.a *= 1.f - voxel.a;
+            rayHit.color.a *= 1.0 - voxel.a;
+
+            if (rayHit.color.a <= 0.01) {
+                rayHit.color.a = 0;
+                break;
+            }
         }
     }
+
+    rayHit.color.a = 1.0 - rayHit.color.a;
 
     return hit;
 }
 
 void main() {
 
-    Ray ray = Ray(camera.position, normalize(vec4(vertPosition / vec2(1, camera.aspect), -1, 0) * camera.rotation).xyz);
+    Ray ray = Ray(camera.position, normalize(vec3(vertPosition / vec2(1, -camera.aspect), -1)) * mat3(camera.rotation));
     
     RayHit rayHit;
     if (rayVoxel(ray, rayHit)) {
-        fragColor = vec4(min(vec3(1, 1, 1), rayHit.color.rgb), rayHit.color.a);
+        fragColor = vec4(rayHit.color.rgb * ((ray.o + ray.d * rayHit.dist).y / 32.0 + 0.5), rayHit.color.a);
     } else {
         discard;
     }

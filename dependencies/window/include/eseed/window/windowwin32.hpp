@@ -21,6 +21,9 @@ public:
     WindowWin32(esdm::Vec2<I32> size, std::string title);
 
     ~WindowWin32();
+
+    void setKeyDownHandler(std::function<void(KeyCode)> handler) override;
+    void setKeyUpHandler(std::function<void(KeyCode)> handler) override;
     
     void poll() override;
 
@@ -39,6 +42,8 @@ private:
     WNDCLASS wc;
     HWND hWnd;
     bool closeRequested = false;
+    std::function<void(KeyCode)> keyDownHandler;
+    std::function<void(KeyCode)> keyUpHandler;
 
     static LRESULT CALLBACK windowProc(
         HWND hWnd, 
@@ -46,6 +51,8 @@ private:
         WPARAM wParam, 
         LPARAM lParam
     );
+
+    static KeyCode findKeyCode(WPARAM wParam);
 };
 
 }

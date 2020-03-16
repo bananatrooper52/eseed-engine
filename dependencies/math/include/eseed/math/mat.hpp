@@ -186,8 +186,8 @@ Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1>
 
 // Operators
 
-#define ESEED_MAT_PRE(op)                       \
-    template <size_t M, size_t N, typename T>   \
+#define ESEED_MAT_PRE(op)                        \
+    template <size_t M, size_t N, typename T>    \
     Mat<M, N, T> &operator op(Mat<M, N, T> &m) { \
         for (size_t i = 0; i < M; i++)           \
             op m[i];                             \
@@ -221,13 +221,13 @@ Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1>
         return out;                                                                                   \
     }
 
-#define ESEED_MAT_BIN_MS(op)                                                               \
-    template <size_t M, size_t N, typename T0, typename T1>                                \
-    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, const T1 &b) { \
-        Mat<M, N, decltype(T0(0) op T1(0))> out;                                           \
-        for (size_t i = 0; i < M; i++)                                                     \
-            out[i] = a[i] op b;                                                            \
-        return out;                                                                        \
+#define ESEED_MAT_BIN_MS(op)                                                        \
+    template <size_t M, size_t N, typename T0, typename T1>                         \
+    Mat<M, N, decltype(T0(0) op T1(0))> operator op(const Mat<M, N, T0> &a, T1 b) { \
+        Mat<M, N, decltype(T0(0) op T1(0))> out;                                    \
+        for (size_t i = 0; i < M; i++)                                              \
+            out[i] = a[i] op b;                                                     \
+        return out;                                                                 \
     }
 
 #define ESEED_MAT_BIN_SM(op)                                                               \
@@ -247,12 +247,12 @@ Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1>
         return a;                                                                                \
     }
 
-#define ESEED_MAT_ASSN_MS(op)                                                         \
-    template <size_t M, size_t N, typename T0, typename T1>                           \
-    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, const T1 &b) { \
-        for (size_t i = 0; i < M; i++)                                                \
-            a[i] op b;                                                                \
-        return a;                                                                     \
+#define ESEED_MAT_ASSN_MS(op)                                                  \
+    template <size_t M, size_t N, typename T0, typename T1>                    \
+    Mat<M, N, decltype(T0(0) op T1(0))> &operator op(Mat<M, N, T0> &a, T1 b) { \
+        for (size_t i = 0; i < M; i++)                                         \
+            a[i] op b;                                                         \
+        return a;                                                              \
     }
 
 ESEED_MAT_PRE(++)

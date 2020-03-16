@@ -23,12 +23,12 @@ void Logger::setMinLogLevel(LogLevel level) {
 
 std::string Logger::getLogLevelString(LogLevel level) {
     switch (level) {
-    case eLevelTrace: return "TRACE";
-    case eLevelDebug: return "DEBUG";
-    case eLevelInfo: return "INFO";
-    case eLevelWarn: return "WARN";
-    case eLevelError: return "ERROR";
-    case eLevelFatal: return "FATAL";
+    case LogLevelTrace: return "TRACE";
+    case LogLevelDebug: return "DEBUG";
+    case LogLevelInfo: return "INFO";
+    case LogLevelWarn: return "WARN";
+    case LogLevelError: return "ERROR";
+    case LogLevelFatal: return "FATAL";
     default: return "?";
     }
 }

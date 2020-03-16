@@ -12,12 +12,12 @@ namespace esdl {
 class Logger {
 public:
     enum LogLevel {
-        eLevelTrace,
-        eLevelDebug,
-        eLevelInfo,
-        eLevelWarn,
-        eLevelError,
-        eLevelFatal
+        LogLevelTrace,
+        LogLevelDebug,
+        LogLevelInfo,
+        LogLevelWarn,
+        LogLevelError,
+        LogLevelFatal
     };
 
     // Construct logger to std::cout
@@ -38,37 +38,37 @@ public:
     // For the most verbose and insignificant of details
     template <typename... Ts>
     void trace(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelTrace, format, args...);
+        return printlnLevel(LogLevelTrace, format, args...);
     }
 
     // For minor details to help with debugging
     template <typename... Ts>
     std::string debug(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelDebug, format, args...);
+        return printlnLevel(LogLevelDebug, format, args...);
     }
 
     // For general information
     template <typename... Ts>
     std::string info(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelInfo, format, args...);
+        return printlnLevel(LogLevelInfo, format, args...);
     }
 
     // For unexpected but non-threatening circumstances
     template <typename... Ts>
     std::string warn(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelWarn, format, args...);
+        return printlnLevel(LogLevelWarn, format, args...);
     }
 
     // For a recoverable problem
     template <typename... Ts>
     std::string error(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelError, format, args...);
+        return printlnLevel(LogLevelError, format, args...);
     }
 
     // For a problem that cannot be recovered from
     template <typename... Ts>
     std::string fatal(const std::string& format, const Ts&... args) const {
-        return printlnLevel(eLevelFatal, format, args...);
+        return printlnLevel(LogLevelFatal, format, args...);
     }
 
     // Assert a condition, crash the program and output a message if false
@@ -85,7 +85,7 @@ public:
     }
 
 private:
-    LogLevel minLogLevel = eLevelInfo;
+    LogLevel minLogLevel = LogLevelInfo;
     std::vector<std::ostream*> outputs;
 
     static std::string getLogLevelString(LogLevel level);

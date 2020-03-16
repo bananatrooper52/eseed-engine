@@ -273,7 +273,7 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b) {
 
 #define ESEED_VEC_BIN_VS(op)                                                                \
     template <size_t L, typename T0, typename T1, typename TRes = decltype(T0(0) op T1(0))> \
-    Vec<L, TRes> operator op(const Vec<L, T0> &a, const T1 &b) {                            \
+    Vec<L, TRes> operator op(const Vec<L, T0> &a, T1 b) {                                   \
         Vec<L, TRes> out;                                                                   \
         for (size_t i = 0; i < L; i++)                                                      \
             out[i] = a[i] op b;                                                             \
@@ -291,17 +291,17 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b) {
 
 #define ESEED_VEC_ASSN_VV(op)                                                          \
     template <size_t L, typename T0, typename T1, typename = decltype(T0(0) op T1(0))> \
-    Vec<L, T0> &operator op(Vec<L, T0> &a, const Vec<L, T1> &b) {                      \
+    Vec<L, T0> &operator op##=(Vec<L, T0> &a, const Vec<L, T1> &b) {                   \
         for (size_t i = 0; i < L; i++)                                                 \
-            a[i] op b[i];                                                              \
+            a[i] op##= b[i];                                                           \
         return a;                                                                      \
     }
 
 #define ESEED_VEC_ASSN_VS(op)                                                          \
     template <size_t L, typename T0, typename T1, typename = decltype(T0(0) op T1(0))> \
-    Vec<L, T0> &operator op(Vec<L, T0> &a, const T1 &b) {                              \
+    Vec<L, T0> &operator op##=(Vec<L, T0> &a, T1 b) {                                  \
         for (size_t i = 0; i < L; i++)                                                 \
-            a[i] op b;                                                                 \
+            a[i] op##= b;                                                              \
         return a;                                                                      \
     }
 
@@ -355,26 +355,26 @@ ESEED_VEC_BIN_SV(>>)
 ESEED_VEC_BIN_SV(&&)
 ESEED_VEC_BIN_SV(||)
 
-ESEED_VEC_ASSN_VV(+=)
-ESEED_VEC_ASSN_VV(-=)
-ESEED_VEC_ASSN_VV(*=)
-ESEED_VEC_ASSN_VV(/=)
-ESEED_VEC_ASSN_VV(%=)
-ESEED_VEC_ASSN_VV(&=)
-ESEED_VEC_ASSN_VV(|=)
-ESEED_VEC_ASSN_VV(^=)
-ESEED_VEC_ASSN_VV(<<=)
-ESEED_VEC_ASSN_VV(>>=)
+ESEED_VEC_ASSN_VV(+)
+ESEED_VEC_ASSN_VV(-)
+ESEED_VEC_ASSN_VV(*)
+ESEED_VEC_ASSN_VV(/)
+ESEED_VEC_ASSN_VV(%)
+ESEED_VEC_ASSN_VV(&)
+ESEED_VEC_ASSN_VV(|)
+ESEED_VEC_ASSN_VV(^)
+ESEED_VEC_ASSN_VV(<<)
+ESEED_VEC_ASSN_VV(>>)
 
-ESEED_VEC_ASSN_VS(+=)
-ESEED_VEC_ASSN_VS(-=)
-ESEED_VEC_ASSN_VS(*=)
-ESEED_VEC_ASSN_VS(/=)
-ESEED_VEC_ASSN_VS(%=)
-ESEED_VEC_ASSN_VS(&=)
-ESEED_VEC_ASSN_VS(|=)
-ESEED_VEC_ASSN_VS(^=)
-ESEED_VEC_ASSN_VS(<<=)
-ESEED_VEC_ASSN_VS(>>=)
+ESEED_VEC_ASSN_VS(+)
+ESEED_VEC_ASSN_VS(-)
+ESEED_VEC_ASSN_VS(*)
+ESEED_VEC_ASSN_VS(/)
+ESEED_VEC_ASSN_VS(%)
+ESEED_VEC_ASSN_VS(&)
+ESEED_VEC_ASSN_VS(|)
+ESEED_VEC_ASSN_VS(^)
+ESEED_VEC_ASSN_VS(<<)
+ESEED_VEC_ASSN_VS(>>)
 
 }

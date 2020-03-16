@@ -5,6 +5,11 @@
 
 namespace esdm {
 
+template <typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
+constexpr T pi() {
+    return T(3.14159265358979323846);
+}
+
 template <typename T>
 inline T abs(T n) {
     return n < 0 ? -n : n;
