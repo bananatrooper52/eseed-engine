@@ -49,7 +49,7 @@ int main() {
         }
     });
 
-    window->setKeyUpHandler([&](esdw::KeyCode keyCode) {
+    window->setKeyUpHandler([&](esdw::KeyUpEvent keyCode) {
         switch (keyCode) {
         case esdw::KeyW:
             ctrlForward = false;

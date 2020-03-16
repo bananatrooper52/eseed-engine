@@ -3,6 +3,7 @@
 #include <eseed/window/windowwin32.hpp>
 
 #include <eseed/logging/logger.hpp>
+#include <windowsx.h>
 
 using namespace esdw;
 using namespace esdl;
@@ -61,12 +62,16 @@ WindowWin32::~WindowWin32() {
     if (hWnd) DestroyWindow(hWnd);
 }
 
-void WindowWin32::setKeyDownHandler(std::function<void(KeyCode)> handler) {
+void WindowWin32::setKeyDownHandler(std::function<void(KeyDownEvent)> handler) {
     keyDownHandler = handler;
 }
 
-void WindowWin32::setKeyUpHandler(std::function<void(KeyCode)> handler) {
+void WindowWin32::setKeyUpHandler(std::function<void(KeyUpEvent)> handler) {
     keyUpHandler = handler;
+}
+
+void WindowWin32::setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) {
+    mouseMoveHandler = handler;
 }
 
 void WindowWin32::poll() {
@@ -98,18 +103,37 @@ LRESULT CALLBACK WindowWin32::windowProc(
         break;
     case WM_KEYDOWN: 
         {
-            WindowWin32* window = (WindowWin32*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+            KeyDownEvent event;
+            event.keyCode = findKeyCode(wParam);
+            
             if (window->keyDownHandler) 
-                window->keyDownHandler(findKeyCode(wParam));
+                window->keyDownHandler(event);
         }
         break;
     case WM_KEYUP: 
         {
-            WindowWin32* window = (WindowWin32*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+            KeyUpEvent event;
+            event.keyCode = findKeyCode(wParam);
+            
             if (window->keyUpHandler) 
-                window->keyUpHandler(findKeyCode(wParam));
+                window->keyUpHandler(event);
         }
         break;
+    case WM_MOUSEMOVE:
+        {
+            MouseMoveEvent event;
+
+            event.screenPos.x = GET_X_LPARAM(lParam);
+            event.screenPos.y = GET_Y_LPARAM(lParam);
+
+            POINT point;
+            ScreenToClient(hWnd, &point);
+            event.pos.x = point.x;
+            event.pos.y = point.y;
+
+            if (window->mouseMoveHandler)
+                window->mouseMoveHandler(event);
+        }
     }
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -117,6 +141,17 @@ LRESULT CALLBACK WindowWin32::windowProc(
 
 void WindowWin32::update() {
     RedrawWindow(hWnd, NULL, NULL, RDW_UPDATENOW);
+}
+
+Vec2<I32> WindowWin32::getSize() {
+    RECT rect;
+    if (GetClientRect(hWnd, &rect)) {
+        return { rect.right - rect.left, rect.bottom - rect.top };
+    } else { 
+        throw std::runtime_error(
+            mainLogger.error("Could not get win32 window size")
+        );
+    }
 }
 
 std::vector<const char*> WindowWin32::getRequiredInstanceExtensionNames() {
@@ -136,17 +171,6 @@ vk::SurfaceKHR WindowWin32::createSurface(vk::Instance instance) {
     mainLogger.debug("Win32 surface created");
 
     return surface;
-}
-
-Vec2<I32> WindowWin32::getSize() {
-    RECT rect;
-    if (GetClientRect(hWnd, &rect)) {
-        return { rect.right - rect.left, rect.bottom - rect.top };
-    } else { 
-        throw std::runtime_error(
-            mainLogger.error("Could not get win32 window size")
-        );
-    }
 }
 
 KeyCode WindowWin32::findKeyCode(WPARAM wParam) {

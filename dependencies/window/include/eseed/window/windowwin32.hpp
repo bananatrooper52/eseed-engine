@@ -22,8 +22,12 @@ public:
 
     ~WindowWin32();
 
-    void setKeyDownHandler(std::function<void(KeyCode)> handler) override;
-    void setKeyUpHandler(std::function<void(KeyCode)> handler) override;
+    void setKeyDownHandler(std::function<void(KeyDownEvent)> handler) override;
+    void setKeyUpHandler(std::function<void(KeyUpEvent)> handler) override;
+    void setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) override;
+
+    bool getKey(KeyCode keyCode) override;
+    esdm::Vec2<float> getCursorPos() override;
     
     void poll() override;
 
@@ -31,19 +35,20 @@ public:
 
     void update() override;
 
+    esdm::Vec2<I32> getSize() override;
+
     std::vector<const char*> getRequiredInstanceExtensionNames() override;
 
     vk::SurfaceKHR createSurface(vk::Instance instance) override;
-
-    esdm::Vec2<I32> getSize() override;
 
 private:
     HINSTANCE hInstance;
     WNDCLASS wc;
     HWND hWnd;
     bool closeRequested = false;
-    std::function<void(KeyCode)> keyDownHandler;
-    std::function<void(KeyCode)> keyUpHandler;
+    std::function<void(KeyDownEvent)> keyDownHandler;
+    std::function<void(KeyUpEvent)> keyUpHandler;
+    std::function<void(MouseMoveEvent)> mouseMoveHandler;
 
     static LRESULT CALLBACK windowProc(
         HWND hWnd, 

@@ -3,11 +3,14 @@
 #include <eseed/math/types.hpp>
 #include <eseed/math/vec.hpp>
 #include <eseed/logging/logger.hpp>
-#include <vulkan/vulkan.hpp>
 #include <memory>
 #include <string>
 #include <vector>
 #include <functional>
+
+#ifdef ESDW_ENABLE_VULKAN_SUPPORT
+#include <vulkan/vulkan.hpp>
+#endif
 
 namespace esdw {
 
@@ -115,12 +118,31 @@ enum KeyCode {
     KeyBracketR = 221
 };
 
+using MousePos = esdm::Vec2<int>;
+
+struct KeyDownEvent {
+    KeyCode keyCode;
+};
+
+struct KeyUpEvent {
+    KeyCode keyCode;
+};
+
+struct MouseMoveEvent {
+    MousePos pos; // Position in window
+    MousePos screenPos; // Position relative to whole monitor
+};
+
 class Window {
 public:
     // Set event handlers
 
-    virtual void setKeyDownHandler(std::function<void(KeyCode)> handler) = 0;
-    virtual void setKeyUpHandler(std::function<void(KeyCode)> handler) = 0;
+    virtual void setKeyDownHandler(std::function<void(KeyDownEvent)> handler) = 0;
+    virtual void setKeyUpHandler(std::function<void(KeyUpEvent)> handler) = 0;
+    virtual void setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) = 0;
+
+    virtual bool getKey(KeyCode keyCode) = 0;
+    virtual esdm::Vec2<float> getCursorPos() = 0;
 
     // Poll for window events
     virtual void poll() = 0;
@@ -131,14 +153,14 @@ public:
     // Display newly drawn graphics
     virtual void update() = 0;
 
+    // Get dimensions of the window in pixels
+    virtual esdm::Vec2<I32> getSize() = 0;
+
     // Get a list of extension names required to create a Vulkan Surface
     virtual std::vector<const char*> getRequiredInstanceExtensionNames() = 0;
 
     // Create a Vulkan surface
     virtual vk::SurfaceKHR createSurface(vk::Instance instance) = 0;
-
-    // Get dimensions of the window in pixels
-    virtual esdm::Vec2<I32> getSize() = 0;
 };
 
 // Platform-agnostic function to create a window for the native platform
