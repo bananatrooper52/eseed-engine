@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define CHUNK_SIZE 32
-#define MAX_VOXEL_TRAVERSAL 256
+#define MAX_VOXEL_TRAVERSAL 32
 
 struct Sphere {
     vec4 color;
@@ -209,7 +209,10 @@ bool rayVoxel(Ray ray, out RayHit rayHit) {
 
 void main() {
 
-    Ray ray = Ray(camera.position, normalize(vec3(vertPosition / vec2(1, -camera.aspect), -1)) * mat3(camera.rotation));
+    Ray ray = Ray(
+        camera.position, 
+        normalize(vec3(vertPosition / vec2(1, -camera.aspect), -1)) * mat3(camera.rotation)
+    );
     
     RayHit rayHit;
     if (rayVoxel(ray, rayHit)) {

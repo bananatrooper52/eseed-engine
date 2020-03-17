@@ -16,6 +16,7 @@ int main() {
     bool ctrlRight = false;
     bool ctrlDown = false;
     bool ctrlUp = false;
+    esdm::Vec2<float> look;
     esdm::Vec3<float> playerPos;
     
     // Settings for main logger
@@ -26,51 +27,6 @@ int main() {
         {1366, 768}, 
         "ESeed Engine"
     );
-    window->setKeyDownHandler([&](esdw::KeyCode keyCode) {
-        switch (keyCode) {
-        case esdw::KeyW:
-            ctrlForward = true;
-            break;
-        case esdw::KeyS:
-            ctrlBack = true;
-            break;
-        case esdw::KeyA:
-            ctrlLeft = true;
-            break;
-        case esdw::KeyD:
-            ctrlRight = true;
-            break;
-        case esdw::KeyShift:
-            ctrlDown = true;
-            break;
-        case esdw::KeySpace:
-            ctrlUp = true;
-            break;
-        }
-    });
-
-    window->setKeyUpHandler([&](esdw::KeyUpEvent keyCode) {
-        switch (keyCode) {
-        case esdw::KeyW:
-            ctrlForward = false;
-            break;
-        case esdw::KeyS:
-            ctrlBack = false;
-            break;
-        case esdw::KeyA:
-            ctrlLeft = false;
-            break;
-        case esdw::KeyD:
-            ctrlRight = false;
-            break;
-        case esdw::KeyShift:
-            ctrlDown = false;
-            break;
-        case esdw::KeySpace:
-            ctrlUp = false;
-            break;
-        }
-    });
 
     RenderContext renderContext(window);
     auto pipeline = renderContext.getRenderPipeline();
@@ -112,16 +68,24 @@ int main() {
             lastTick = 0;
             tps++;
 
+            if (window->getKey(esdw::KeyEsc)) break;
+
+            look -= esdm::Vec2<float>(window->getMousePos()) / 
+                esdm::Vec2<float>(window->getSize()) - 0.5f;
+            window->setMousePos(window->getSize() / 2);
+
             esdm::Vec3<float> dir;
-            if (ctrlForward) dir.z--;
-            if (ctrlBack) dir.z++;
-            if (ctrlLeft) dir.x--;
-            if (ctrlRight) dir.x++;
-            if (ctrlDown) dir.y--;
-            if (ctrlUp) dir.y++;
+            if (window->getKey(esdw::KeyW)) dir.z--;
+            if (window->getKey(esdw::KeyS)) dir.z++;
+            if (window->getKey(esdw::KeyA)) dir.x--;
+            if (window->getKey(esdw::KeyD)) dir.x++;
+            if (window->getKey(esdw::KeyShift)) dir.y--;
+            if (window->getKey(esdw::KeySpace)) dir.y++;
 
             float speed = 10.f;
-            esdm::Vec3<float> vel = dir * speed;
+            esdm::Vec3<float> vel = esdm::Vec3<float>(
+                esdm::matmul(esdm::Vec4<float>(dir * speed), esdm::matRotate({ 0, 1, 0 }, look.x))
+            );
 
             playerPos += vel * delta;
         }
@@ -134,7 +98,7 @@ int main() {
 
             pipeline->setCamera(Camera{ 
                 playerPos,
-                esdm::matmul(esdm::rotateY(0.f), esdm::rotateX(-.1f)),
+                esdm::matmul(esdm::matRotate({ 1, 0, 0 }, look.y), esdm::matRotate({ 0, 1, 0 }, look.x)),
                 float(window->getSize().x) / float(window->getSize().y),
                 0.25f * esdm::pi<float>() * 2.f
             });

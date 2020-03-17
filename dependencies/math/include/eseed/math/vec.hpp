@@ -258,7 +258,7 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b) {
     Vec<L, T> operator op(const Vec<L, T> &v) {                   \
         Vec<L, T> out;                                            \
         for (size_t i = 0; i < L; i++)                            \
-            v[i] = op v[i];                                       \
+            out[i] = op v[i];                                     \
         return out;                                               \
     }
 
@@ -268,7 +268,7 @@ Vec3<decltype(T0(0) * T1(0))> cross(const Vec3<T0> &a, const Vec3<T1> &b) {
         Vec<L, TRes> out;                                                                   \
         for (size_t i = 0; i < L; i++)                                                      \
             out[i] = a[i] op b[i];                                                          \
-        return a;                                                                           \
+        return out;                                                                         \
     }
 
 #define ESEED_VEC_BIN_VS(op)                                                                \

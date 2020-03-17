@@ -10,9 +10,9 @@
 #undef NOMINMAX
 #endif
 
-#include <string>
 #include <eseed/math/types.hpp>
 #include <eseed/math/vec.hpp>
+#include <string>
 
 namespace esdw {
 
@@ -27,7 +27,10 @@ public:
     void setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) override;
 
     bool getKey(KeyCode keyCode) override;
-    esdm::Vec2<float> getCursorPos() override;
+    MousePos getMouseScreenPos() override;
+    MousePos getMousePos() override;
+    void setMouseScreenPos(MousePos screenPos) override;
+    void setMousePos(MousePos pos) override;
     
     void poll() override;
 
@@ -56,8 +59,6 @@ private:
         WPARAM wParam, 
         LPARAM lParam
     );
-
-    static KeyCode findKeyCode(WPARAM wParam);
 };
 
 }

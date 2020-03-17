@@ -142,7 +142,10 @@ public:
     virtual void setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) = 0;
 
     virtual bool getKey(KeyCode keyCode) = 0;
-    virtual esdm::Vec2<float> getCursorPos() = 0;
+    virtual MousePos getMouseScreenPos() = 0;
+    virtual MousePos getMousePos() = 0;
+    virtual void setMouseScreenPos(MousePos screenPos) = 0;
+    virtual void setMousePos(MousePos pos) = 0;
 
     // Poll for window events
     virtual void poll() = 0;

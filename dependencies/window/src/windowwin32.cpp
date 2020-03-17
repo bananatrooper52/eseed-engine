@@ -4,10 +4,126 @@
 
 #include <eseed/logging/logger.hpp>
 #include <windowsx.h>
+#include <set>
 
 using namespace esdw;
 using namespace esdl;
 using namespace esdm;
+
+const std::set<std::pair<KeyCode, int>> keyCodeMappings = {
+    { KeyBackspace, VK_BACK },
+    { KeyTab, VK_TAB },
+    { KeyClear, VK_CLEAR },
+    { KeyEnter, VK_RETURN },
+    { KeyShift, VK_SHIFT },
+    { KeyCtrl, VK_CONTROL },
+    { KeyAlt, VK_MENU },
+    { KeyPause, VK_PAUSE },
+    { KeyCapsLock, VK_CAPITAL },
+    { KeyEsc, VK_ESCAPE },
+    { KeySpace, VK_SPACE },
+    { KeyPgUp, VK_PRIOR },
+    { KeyPgDn, VK_NEXT },
+    { KeyEnd, VK_END },
+    { KeyHome, VK_HOME },
+    { KeyArrowLeft, VK_LEFT },
+    { KeyArrowUp, VK_UP },
+    { KeyArrowRight, VK_RIGHT },
+    { KeyArrowDown, VK_DOWN },
+    { KeySelect, VK_SELECT },
+    { KeyPrntScrn, VK_SNAPSHOT },
+    { KeyIns, VK_INSERT },
+    { KeyDel, VK_DELETE },
+    { Key0, 0x30 },
+    { Key1, 0x31 },
+    { Key2, 0x32 },
+    { Key3, 0x33 },
+    { Key4, 0x34 },
+    { Key5, 0x35 },
+    { Key6, 0x36 },
+    { Key7, 0x37 },
+    { Key8, 0x38 },
+    { Key9, 0x39 },
+    { KeyA, 0x41 },
+    { KeyB, 0x42 },
+    { KeyC, 0x43 },
+    { KeyD, 0x44 },
+    { KeyE, 0x45 },
+    { KeyF, 0x46 },
+    { KeyG, 0x47 },
+    { KeyH, 0x48 },
+    { KeyI, 0x49 },
+    { KeyJ, 0x4a },
+    { KeyK, 0x4b },
+    { KeyL, 0x4c },
+    { KeyM, 0x4d },
+    { KeyN, 0x4e },
+    { KeyO, 0x4f },
+    { KeyP, 0x50 },
+    { KeyQ, 0x51 },
+    { KeyR, 0x52 },
+    { KeyS, 0x53 },
+    { KeyT, 0x54 },
+    { KeyU, 0x55 },
+    { KeyV, 0x56 },
+    { KeyW, 0x57 },
+    { KeyX, 0x58 },
+    { KeyY, 0x59 },
+    { KeyZ, 0x5a },
+    { KeyMetaL, VK_LWIN },
+    { KeyMetaR, VK_RWIN },
+    { KeyNumpad0, VK_NUMPAD0 },
+    { KeyNumpad1, VK_NUMPAD1 },
+    { KeyNumpad2, VK_NUMPAD2 },
+    { KeyNumpad3, VK_NUMPAD3 },
+    { KeyNumpad4, VK_NUMPAD4 },
+    { KeyNumpad5, VK_NUMPAD5 },
+    { KeyNumpad6, VK_NUMPAD6 },
+    { KeyNumpad7, VK_NUMPAD7 },
+    { KeyNumpad8, VK_NUMPAD8 },
+    { KeyNumpad9, VK_NUMPAD9 },
+    { KeyMul, VK_MULTIPLY },
+    { KeyAdd, VK_ADD },
+    { KeySub, VK_SUBTRACT },
+    { KeyDecimal, VK_DECIMAL },
+    { KeyDiv, VK_DIVIDE },
+    { KeyF1, VK_F1 },
+    { KeyF2, VK_F2 },
+    { KeyF3, VK_F3 },
+    { KeyF4, VK_F4 },
+    { KeyF5, VK_F5 },
+    { KeyF6, VK_F6 },
+    { KeyF7, VK_F7 },
+    { KeyF8, VK_F8 },
+    { KeyF9, VK_F9 },
+    { KeyF10, VK_F10 },
+    { KeyF11, VK_F11 },
+    { KeyF12, VK_F12 },
+    { KeyNumLock, VK_NUMLOCK },
+    { KeyScrollLock, VK_SCROLL },
+    { KeySemicolon, VK_OEM_1 },
+    { KeyEqual, VK_OEM_PLUS },
+    { KeyComma, VK_OEM_COMMA },
+    { KeyDash, VK_OEM_MINUS },
+    { KeyPeriod, VK_OEM_PERIOD },
+    { KeySlash, VK_OEM_2 },
+    { KeyGrave, VK_OEM_3 },
+    { KeyBracketL, VK_OEM_4 },
+    { KeyBackslash, VK_OEM_5 },
+    { KeyBracketR, VK_OEM_6 },
+};
+
+int esdwToWinKeyCode(KeyCode keyCode) {
+    for (const auto& it : keyCodeMappings)
+        if (it.first == keyCode) return it.second;
+    return 0;
+}
+
+KeyCode winToEsdwKeyCode(int winKeyCode) {
+    for (const auto& it : keyCodeMappings)
+        if (it.second == winKeyCode) return it.first;
+    return KeyUnknown;
+}
 
 WindowWin32::WindowWin32(Vec2<I32> size, std::string title) {
     mainLogger.debug("Creating window \"{}\"", title);
@@ -31,7 +147,7 @@ WindowWin32::WindowWin32(Vec2<I32> size, std::string title) {
     rect.right = size.x;
     rect.bottom = size.y;
 
-    AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW ^ WS_OVERLAPPED, FALSE, 0);
+    AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW ^ WS_OVERLAPPED, FALSE, NULL);
 
     hWnd = CreateWindowEx(
         0,
@@ -40,8 +156,8 @@ WindowWin32::WindowWin32(Vec2<I32> size, std::string title) {
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        rect.right,
-        rect.bottom,
+        rect.right - rect.left,
+        rect.bottom - rect.top,
         NULL,
         NULL,
         hInstance,
@@ -50,7 +166,7 @@ WindowWin32::WindowWin32(Vec2<I32> size, std::string title) {
 
     if (hWnd == NULL) {
         throw std::runtime_error(
-            mainLogger.error("Failed to create native Windows window")
+            mainLogger.error("Failed to create native Win32 window")
         );
     }
 
@@ -72,6 +188,36 @@ void WindowWin32::setKeyUpHandler(std::function<void(KeyUpEvent)> handler) {
 
 void WindowWin32::setMouseMoveHandler(std::function<void(MouseMoveEvent)> handler) {
     mouseMoveHandler = handler;
+}
+
+bool WindowWin32::getKey(KeyCode keyCode) {
+    return GetKeyState(esdwToWinKeyCode(keyCode)) & 0x8000;
+}
+
+MousePos WindowWin32::getMouseScreenPos() {
+    POINT point;
+    if (!GetCursorPos(&point)) throw std::runtime_error("Could not get Win32 mouse position");
+
+    return MousePos { point.x, point.y };
+}
+
+MousePos WindowWin32::getMousePos() {
+    POINT point;
+    if (!GetCursorPos(&point)) throw std::runtime_error("Could not get Win32 mouse position");
+
+    ScreenToClient(hWnd, &point);
+
+    return MousePos { point.x, point.y };
+}
+
+void WindowWin32::setMouseScreenPos(MousePos screenPos) {
+    SetCursorPos(screenPos.x, screenPos.y);
+}
+
+void WindowWin32::setMousePos(MousePos pos) {
+    POINT point = { pos.x, pos.y };
+    ClientToScreen(hWnd, &point);
+    SetCursorPos(point.x, point.y);
 }
 
 void WindowWin32::poll() {
@@ -104,7 +250,7 @@ LRESULT CALLBACK WindowWin32::windowProc(
     case WM_KEYDOWN: 
         {
             KeyDownEvent event;
-            event.keyCode = findKeyCode(wParam);
+            event.keyCode = winToEsdwKeyCode((int)wParam);
             
             if (window->keyDownHandler) 
                 window->keyDownHandler(event);
@@ -113,7 +259,7 @@ LRESULT CALLBACK WindowWin32::windowProc(
     case WM_KEYUP: 
         {
             KeyUpEvent event;
-            event.keyCode = findKeyCode(wParam);
+            event.keyCode = winToEsdwKeyCode((int)wParam);
             
             if (window->keyUpHandler) 
                 window->keyUpHandler(event);
@@ -126,7 +272,7 @@ LRESULT CALLBACK WindowWin32::windowProc(
             event.screenPos.x = GET_X_LPARAM(lParam);
             event.screenPos.y = GET_Y_LPARAM(lParam);
 
-            POINT point;
+            POINT point = { event.screenPos.x, event.screenPos.y };
             ScreenToClient(hWnd, &point);
             event.pos.x = point.x;
             event.pos.y = point.y;
@@ -149,7 +295,7 @@ Vec2<I32> WindowWin32::getSize() {
         return { rect.right - rect.left, rect.bottom - rect.top };
     } else { 
         throw std::runtime_error(
-            mainLogger.error("Could not get win32 window size")
+            mainLogger.error("Could not get Win32 window size")
         );
     }
 }
@@ -171,110 +317,4 @@ vk::SurfaceKHR WindowWin32::createSurface(vk::Instance instance) {
     mainLogger.debug("Win32 surface created");
 
     return surface;
-}
-
-KeyCode WindowWin32::findKeyCode(WPARAM wParam) {
-    switch (wParam) {
-    case VK_BACK: return KeyBackspace;
-    case VK_TAB: return KeyTab;
-    case VK_CLEAR: return KeyClear;
-    case VK_RETURN: return KeyEnter;
-    case VK_SHIFT: return KeyShift;
-    case VK_CONTROL: return KeyCtrl;
-    case VK_MENU: return KeyAlt;
-    case VK_PAUSE: return KeyPause;
-    case VK_CAPITAL: return KeyCapsLock;
-    case VK_ESCAPE: return KeyEsc;
-    case VK_SPACE: return KeySpace;
-    case VK_PRIOR: return KeyPgUp;
-    case VK_NEXT: return KeyPgDn;
-    case VK_END: return KeyEnd;
-    case VK_HOME: return KeyHome;
-    case VK_LEFT: return KeyArrowLeft;
-    case VK_UP: return KeyArrowUp;
-    case VK_RIGHT: return KeyArrowRight;
-    case VK_DOWN: return KeyArrowDown;
-    case VK_SELECT: return KeySelect;
-    case VK_SNAPSHOT: return KeyPrntScrn;
-    case VK_INSERT: return KeyIns;
-    case VK_DELETE: return KeyDel;
-    case 0x30: return Key0;
-    case 0x31: return Key1;
-    case 0x32: return Key2;
-    case 0x33: return Key3;
-    case 0x34: return Key4;
-    case 0x35: return Key5;
-    case 0x36: return Key6;
-    case 0x37: return Key7;
-    case 0x38: return Key8;
-    case 0x39: return Key9;
-    case 0x41: return KeyA;
-    case 0x42: return KeyB;
-    case 0x43: return KeyC;
-    case 0x44: return KeyD;
-    case 0x45: return KeyE;
-    case 0x46: return KeyF;
-    case 0x47: return KeyG;
-    case 0x48: return KeyH;
-    case 0x49: return KeyI;
-    case 0x4a: return KeyJ;
-    case 0x4b: return KeyK;
-    case 0x4c: return KeyL;
-    case 0x4d: return KeyM;
-    case 0x4e: return KeyN;
-    case 0x4f: return KeyO;
-    case 0x50: return KeyP;
-    case 0x51: return KeyQ;
-    case 0x52: return KeyR;
-    case 0x53: return KeyS;
-    case 0x54: return KeyT;
-    case 0x55: return KeyU;
-    case 0x56: return KeyV;
-    case 0x57: return KeyW;
-    case 0x58: return KeyX;
-    case 0x59: return KeyY;
-    case 0x5a: return KeyZ;
-    case VK_LWIN: return KeyMetaL;
-    case VK_RWIN: return KeyMetaR;
-    case VK_NUMPAD0: return KeyNumpad0;
-    case VK_NUMPAD1: return KeyNumpad1;
-    case VK_NUMPAD2: return KeyNumpad2;
-    case VK_NUMPAD3: return KeyNumpad3;
-    case VK_NUMPAD4: return KeyNumpad4;
-    case VK_NUMPAD5: return KeyNumpad5;
-    case VK_NUMPAD6: return KeyNumpad6;
-    case VK_NUMPAD7: return KeyNumpad7;
-    case VK_NUMPAD8: return KeyNumpad8;
-    case VK_NUMPAD9: return KeyNumpad9;
-    case VK_MULTIPLY: return KeyMul;
-    case VK_ADD: return KeyAdd;
-    case VK_SUBTRACT: return KeySub;
-    case VK_DECIMAL: return KeyDecimal;
-    case VK_DIVIDE: return KeyDiv;
-    case VK_F1: return KeyF1;
-    case VK_F2: return KeyF2;
-    case VK_F3: return KeyF3;
-    case VK_F4: return KeyF4;
-    case VK_F5: return KeyF5;
-    case VK_F6: return KeyF6;
-    case VK_F7: return KeyF7;
-    case VK_F8: return KeyF8;
-    case VK_F9: return KeyF9;
-    case VK_F10: return KeyF10;
-    case VK_F11: return KeyF11;
-    case VK_F12: return KeyF12;
-    case VK_NUMLOCK: return KeyNumLock;
-    case VK_SCROLL: return KeyScrollLock;
-    case VK_OEM_1: return KeySemicolon;
-    case VK_OEM_PLUS: return KeyEqual;
-    case VK_OEM_COMMA: return KeyComma;
-    case VK_OEM_MINUS: return KeyDash;
-    case VK_OEM_PERIOD: return KeyPeriod;
-    case VK_OEM_2: return KeySlash;
-    case VK_OEM_3: return KeyGrave;
-    case VK_OEM_4: return KeyBracketL;
-    case VK_OEM_5: return KeyBackslash;
-    case VK_OEM_6: return KeyBracketR;
-    default: return KeyUnknown;
-    }
 }

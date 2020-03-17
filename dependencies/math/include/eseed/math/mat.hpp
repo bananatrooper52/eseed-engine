@@ -93,16 +93,17 @@ public:
     Mat() {}
 
     // Mat<2, 2, T>(arr) =>
-    // [ arr[0], arr[1] ]
-    // [ arr[2], arr[3] ]
+    // [ arr[0], arr[2] ]
+    // [ arr[1], arr[3] ]
     Mat(const T* arr) {
+
         std::copy(arr, arr + M * N, &data[0][0]);
     }
 
     // Mat<2, 2, T>(a, b, c, d) =>
-    // [ a, b ]
-    // [ c, d ]
-    template <typename... Ts, typename std::enable_if_t<std::conjunction_v<std::is_convertible<Ts, T>...> && (sizeof...(Ts) == M * N)> * = nullptr>
+    // [ a, c ]
+    // [ b, d ]
+    template <typename... Ts, typename std::enable_if_t<std::conjunction_v<std::is_same<Ts, T>...> && (sizeof...(Ts) == M * N)> * = nullptr>
     Mat(const Ts &... components) {
         std::array<T, M * N> arr{((T)components)...};
         std::copy(arr.begin(), arr.end(), &data[0][0]);
@@ -111,7 +112,7 @@ public:
     // Mat<2, 2, T>(v) =>
     // [ v, 0 ]
     // [ 0, v ]
-    explicit Mat(const T &component) {
+    explicit Mat(T component) {
         for (size_t i = 0; i < (M > N ? M : N); i++)
             data[i][i] = component;
     }
@@ -143,8 +144,13 @@ public:
     }
 
     Mat inverse() const {
-        Mat<M, N, T> out = *this;
-        for (size_t i = 0; i <)
+        Mat<M, N, T> out;
+        for (size_t i = 0; i < M; i++) {
+            for (size_t j = 0; j < N; j++) {
+                out[i][j] = *this[j][i];
+            }
+        }
+        return out;
     }
 
     friend std::ostream &operator<<(std::ostream &out, const Mat &m)     {
@@ -168,16 +174,16 @@ Mat<M, N, decltype(T0(0) * T1(0))> matmul(const Mat<M, MN, T0> &a, const Mat<MN,
     return out;
 }
 
-template <size_t M, size_t MN, typename T0, typename T1>
-Vec<M, decltype(T0(0), T1(0))> matmul(const Mat<M, MN, T0> &a, const Vec<MN, T1> &b) {
+template <size_t M, size_t N, typename T0, typename T1>
+Vec<M, decltype(T0(0), T1(0))> matmul(const Mat<M, N, T0> &a, const Vec<N, T1> &b) {
     Vec<M, decltype(T0(0) * T1(0))> out;
     for (size_t i = 0; i < M; i++)
         out[i] = dot(a.getRow(i), b);
     return out;
 }
 
-template <size_t MN, size_t N, typename T0, typename T1>
-Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<MN, T0> &a, const Mat<MN, N, T1> &b) {
+template <size_t M, size_t N, typename T0, typename T1>
+Vec<N, decltype(T0(0), T1(0))> matmul(const Vec<M, T0> &a, const Mat<M, N, T1> &b) {
     Vec<N, decltype(T0(0) * T1(0))> out;
     for (size_t j = 0; j < N; j++)
         out[j] = dot(a, b.getCol(j));
