@@ -211,7 +211,7 @@ void main() {
 
     Ray ray = Ray(
         camera.position, 
-        normalize(vec3(vertPosition / vec2(1, -camera.aspect), -1)) * mat3(camera.rotation)
+        mat3(camera.rotation) * normalize(vec3(vertPosition / vec2(1, -camera.aspect), -1))
     );
     
     RayHit rayHit;
